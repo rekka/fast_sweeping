@@ -24,35 +24,44 @@ pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
     if u[1] >= 0. {
         if u[2] >= 0. {
             return None;
-        } else { // u[2] < 0.
+        } else {
+            // u[2] < 0.
             // intersect position
             let i02 = u[0] / (u[0] - u[2]);
             let i12 = (2f64).sqrt() * u[1] / (u[1] - u[2]);
             // find the direction of the gradient
             // to deduce the vertex that is closest to the line
-            if gx <= 0. { // 0
+            if gx <= 0. {
+                // 0
                 return Some([u[0] / g_norm, i12, 1. - i02]);
-            } else if gx > -gy { // 1
+            } else if gx > -gy {
+                // 1
                 return Some([i02, u[1] / g_norm, (2f64).sqrt() - i12]);
-            } else { // 2
+            } else {
+                // 2
                 return Some([i02, i12, -u[2] / g_norm]);
             }
         }
-    } else { // u[1] < 0.
+    } else {
+        // u[1] < 0.
         if u[2] >= 0. {
             // intersect position
             let i01 = u[0] / (u[0] - u[1]);
             let i12 = (2f64).sqrt() * u[1] / (u[1] - u[2]);
             // find the direction of the gradient
             // to deduce the vertex that is closest to the line
-            if gy <= 0. { // 0
+            if gy <= 0. {
+                // 0
                 return Some([u[0] / g_norm, 1. - i01, (2f64).sqrt() - i12]);
-            } else if -gx > gy { // 1
+            } else if -gx > gy {
+                // 1
                 return Some([i01, -u[1] / g_norm, (2f64).sqrt() - i12]);
-            } else { // 2
+            } else {
+                // 2
                 return Some([i01, i12, u[2] / g_norm]);
             }
-        } else { // u[2] < 0.
+        } else {
+            // u[2] < 0.
             // intersect position
             let i10 = u[1] / (u[1] - u[0]);
             let i20 = u[2] / (u[2] - u[0]);
@@ -163,8 +172,8 @@ mod test {
         let gy = gy / g_norm;
         let c = -2.;
 
-        for i in 0..(n+1) {
-            for j in 0..(n+1) {
+        for i in 0..(n + 1) {
+            for j in 0..(n + 1) {
                 let x = i as f64 * h;
                 let y = j as f64 * h;
                 u[i + j * (n + 1)] = x * gx + y * gy + c;
@@ -173,8 +182,8 @@ mod test {
 
         let mut d = vec![0f64; (n + 1) * (n + 1)];
 
-        init_dist(&mut d, &u, (n+1, n+1));
-        fast_sweep_dist(&mut d, (n+1, n+1));
+        init_dist(&mut d, &u, (n + 1, n + 1));
+        fast_sweep_dist(&mut d, (n + 1, n + 1));
 
         for i in 0..d.len() {
             if u[i] < 0. {

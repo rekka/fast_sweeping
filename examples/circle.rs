@@ -10,17 +10,13 @@ fn main() {
 
     let h = 1f64 / n as f64;
 
-    let ta = 1.3f64;
-    let gx = ta.cos();
-    let gy = ta.sin();
-
-    let c = - (gx + gy) * n as f64 * 0.5 * h;
+    let r = 0.3;
 
     for i in 0..(n+1) {
         for j in 0..(n+1) {
-            let x = i as f64 * h;
-            let y = j as f64 * h;
-            u[i + j * (n + 1)] = x * gx + y * gy + c;
+            let x = i as f64 * h - 0.5;
+            let y = j as f64 * h - 0.5;
+            u[i + j * (n + 1)] = (x * x + y * y).sqrt() - r;
         }
     }
 
@@ -44,9 +40,10 @@ fn main() {
     let mut fg = Figure::new();
 
     fg.axes3d()
+        .set_view_map()
         .surface(&err, n+1, n+1, None, &[])
         // .surface(&d, n+1, n+1, None, &[])
-        .surface(&u, n+1, n+1, None, &[])
+        // .surface(&u, n+1, n+1, None, &[])
         ;
     fg.show();
 }

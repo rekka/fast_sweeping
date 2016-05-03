@@ -20,20 +20,26 @@ fn main() {
         }
     }
 
+    let orig = u.clone();
+
     let mut d = vec![0f64; (n + 1) * (n + 1)];
 
-    init_dist(&mut d, &u, (n+1, n+1));
-    fast_sweep_dist(&mut d, (n+1, n+1));
+        init_dist(&mut d, &u, (n+1, n+1));
+        fast_sweep_dist(&mut d, (n+1, n+1));
 
-    for i in 0..d.len() {
-        d[i] *= h;
-        if u[i] < 0. {
-            d[i] = -d[i];
+        for i in 0..d.len() {
+            d[i] *= h;
+            if u[i] < 0. {
+                d[i] = -d[i];
+            }
         }
-    }
+
+        for i in 0..d.len() {
+            u[i] = d[i];
+        }
 
     let mut err = d.clone();
-    for (err, u) in err.iter_mut().zip(u.iter()) {
+    for (err, u) in err.iter_mut().zip(orig.iter()) {
         *err -= *u;
     }
 

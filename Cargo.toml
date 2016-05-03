@@ -1,0 +1,10 @@
+[package]
+authors = ["Norbert Pozar <bertapozar@gmail.com>"]
+name = "fast_sweeping"
+version = "0.1.0"
+
+[dependencies]
+
+[dev-dependencies]
+gnuplot = "0.0.20"
+quickcheck = "0.2.27"

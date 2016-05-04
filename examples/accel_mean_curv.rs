@@ -1,18 +1,19 @@
 extern crate fast_sweeping;
 extern crate gnuplot;
 
-use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor};
+use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor,
+            ContourStyle, AutoOption};
 use fast_sweeping::*;
 
 fn main() {
-    let n = 16;
+    let n = 64;
     let mut u = vec![0.; (n + 1) * (n + 1)];
 
     let h = 1f64 / n as f64;
-    let t_max = 256;
-    let dt = h * h / 2.;
-    let k = 16;
-    let tau = dt / k as f64;
+    let t_max = 14;
+    // let dt = h / 2.;
+    let k = 128;
+    let tau = h;
 
     let r = 0.3;
 
@@ -54,6 +55,7 @@ fn main() {
             }
 
         // solve wave equation for k timesteps
+        let mut w = u.clone();
         for _ in 0..k {
             let mut v = u.clone();
             for j in 0..(n+1) {
@@ -64,9 +66,10 @@ fn main() {
                     let ur = if i == n { uc } else { u[s + 1] };
                     let ut = if j == 0 { uc } else { u[s - n - 1] };
                     let ub = if j == n { uc } else { u[s + n + 1] };
-                    v[s] = uc + (tau / h * h) * (ul + ur + ut + ub - 4. * uc);
+                    v[s] = 2. * uc - w[s] + (tau * tau / h * h) * (ul + ur + ut + ub - 4. * uc);
                 }
             }
+            w.clone_from(&u);
             u.clone_from(&v);
         }
 
@@ -77,7 +80,9 @@ fn main() {
     let mut fg = Figure::new();
 
     fg.axes3d()
+        .set_aspect_ratio(AutoOption::Fix(1.))
         .set_view_map()
+        .show_contours_custom(true, true, ContourStyle::Linear, AutoOption::Auto, &[0.])
         .surface(&u, n+1, n+1, None, &[])
         // .surface(&d, n+1, n+1, None, &[])
         // .surface(&u, n+1, n+1, None, &[])

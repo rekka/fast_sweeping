@@ -1,24 +1,22 @@
-/// Compute the signed distance function from a line segment given as the level set of a linear
+/// Compute the signed distance function from a line segment given as the _zero_ level set of a linear
 /// function on an isosceles right-angle triangle.
 ///
-/// Input are `u`, the values at the verteces. The vertex 0 is the one with the right angle.
+/// Inputs are `u`, the values at the verteces. The vertex 0 is the one with the right angle.
 ///
-/// `h` is the length of the side.
-///
-/// The return is the values of the signed distance function or `None` if there line segment does
-/// not pass through the triangle.
-pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
+/// The function returns the values of the signed distance function or `None` if the zero level set
+/// does not pass through the triangle.
+pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
+    let mut u = u;
     // normalize so that u[0] >= 0.
     if u[0] < 0. {
-        for i in 0..3 {
-            u[i] = -u[i];
+        for u in u.iter_mut() {
+            *u = -*u;
         }
     }
 
     // gradient vector
     let gx = u[1] - u[0];
     let gy = u[2] - u[0];
-
     let g_norm = (gx * gx + gy * gy).sqrt();
 
     if u[1] >= 0. {
@@ -69,8 +67,6 @@ pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
             return Some([u[0] / g_norm, i10, i20]);
         }
     }
-
-    Some([0., 0., 0.])
 }
 
 /// Initialize distance around the free boundary.
@@ -101,17 +97,13 @@ pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
             }
         }
     }
-
-    // for i in 0..d.len() {
-    //     if u[i] < 0. {
-    //         d[i] = -d[i];
-    //     }
-    // }
 }
 
-/// Computes the signed distance function in 2D using the Fast Sweeping algorithm.
+/// Computes the solution of the eikonal equation in 2D using the Fast Sweeping algorithm.
+///
+/// `d` should be initialized to large values at the unknown nodes.
 pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
-
+    // sweep in 4 directions
     for k in 1..5 {
         for q in 0..dim.1 {
             let j = if k == 3 || k == 4 {
@@ -156,54 +148,71 @@ pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
 mod test {
     use super::*;
     extern crate quickcheck;
+    extern crate ndarray;
     use self::quickcheck::quickcheck;
+    use self::ndarray::prelude::*;
 
     #[test]
-    fn it_works() {
-        let n = 8;
-        let mut u = vec![0.; (n + 1) * (n + 1)];
+    fn it_works_for_x_axis_line() {
+        fn prop(y: f64) -> bool {
+            let n = 9;
+            let y = (y - y.floor()) * 0.9 + 0.05;
+            let ys = OwnedArray::linspace(0. - y, 1. - y, n);
+            let u_array = ys.broadcast((n, n)).unwrap().t().to_owned();
+            let u = u_array.as_slice().unwrap();
 
-        let h = 1f64;
+            let d = {
+                let mut d = vec![0f64; n * n];
 
-        let gx = 0.5f64;
-        let gy = 0.4f64;
-        let g_norm = (gx * gx + gy * gy).sqrt();
-        let gx = gx / g_norm;
-        let gy = gy / g_norm;
-        let c = -2.;
+                init_dist(&mut d, &u, (n, n));
+                fast_sweep_dist(&mut d, (n, n));
 
-        for i in 0..(n + 1) {
-            for j in 0..(n + 1) {
-                let x = i as f64 * h;
-                let y = j as f64 * h;
-                u[i + j * (n + 1)] = x * gx + y * gy + c;
-            }
+                for i in 0..d.len() {
+                    if u[i] < 0. {
+                        d[i] = -d[i];
+                    }
+                }
+
+                OwnedArray::from_shape_vec((n, n), d).unwrap() * (1. / (n - 1) as f64)
+            };
+            d.all_close(&u_array, 0.00001)
         }
-
-        let mut d = vec![0f64; (n + 1) * (n + 1)];
-
-        init_dist(&mut d, &u, (n + 1, n + 1));
-        fast_sweep_dist(&mut d, (n + 1, n + 1));
-
-        for i in 0..d.len() {
-            if u[i] < 0. {
-                d[i] = -d[i];
-            }
-        }
-        for (d, u) in d.iter_mut().zip(u.iter()) {
-            *d -= *u;
-        }
-        println!("");
-        println!("{:?}", u);
-        println!("{:?}", d);
-        panic!();
+        quickcheck(prop as fn(f64) -> bool);
     }
 
     #[test]
-    fn it_is_nonnegative() {
+    fn it_works_for_y_axis_line() {
+        fn prop(x: f64) -> bool {
+            let n = 9;
+            let x = (x - x.floor()) * 0.9 + 0.05;
+            let xs = OwnedArray::linspace(0. - x, 1. - x, n);
+            let u_array = xs.broadcast((n, n)).unwrap().to_owned();
+            let u = u_array.as_slice().unwrap();
+
+            let d = {
+                let mut d = vec![0f64; n * n];
+
+                init_dist(&mut d, &u, (n, n));
+                fast_sweep_dist(&mut d, (n, n));
+
+                for i in 0..d.len() {
+                    if u[i] < 0. {
+                        d[i] = -d[i];
+                    }
+                }
+
+                OwnedArray::from_shape_vec((n, n), d).unwrap() * (1. / (n - 1) as f64)
+            };
+
+            d.all_close(&u_array, 0.00001)
+        }
+        quickcheck(prop as fn(f64) -> bool);
+    }
+
+    #[test]
+    fn it_is_nonnegative_on_triangle() {
         fn prop(x: f64, y: f64, z: f64) -> bool {
             if let Some(e) = triangle_dist([x, y, z]) {
-                // println!("{:?} -> {:?}", (x, y, z), e);
                 e.into_iter().all(|&x| x >= 0.)
             } else {
                 true

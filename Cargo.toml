@@ -7,4 +7,5 @@ version = "0.1.0"
 
 [dev-dependencies]
 gnuplot = "0.0.20"
+ndarray = "0.5.1"
 quickcheck = "0.2.27"

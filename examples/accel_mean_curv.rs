@@ -17,7 +17,7 @@ fn main() {
 
     let r = 0.3;
 
-    // init with circle
+    // init with a circle of radius r
     for i in 0..(n+1) {
         for j in 0..(n+1) {
             let x = i as f64 * h - 0.5;
@@ -54,7 +54,7 @@ fn main() {
                 None => u.clone_from(&d)
             }
 
-        // solve wave equation for k timesteps
+        // solve wave equation for k timesteps of length tau
         let mut w = u.clone();
         for _ in 0..k {
             let mut v = u.clone();

@@ -1,3 +1,7 @@
+//! Fast sweeping method for the signed distance function in 2D.
+//!
+//!
+
 /// Compute the signed distance function from a line segment given as the _zero_ level set of a linear
 /// function on an isosceles right-angle triangle.
 ///
@@ -69,7 +73,7 @@ pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
     }
 }
 
-/// Initialize distance around the free boundary.
+/// Initializes distance around the free boundary.
 ///
 /// Splits every square into two triangles and computes the distance on each of them.
 pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
@@ -103,6 +107,7 @@ pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
 ///
 /// `d` should be initialized to large values at the unknown nodes.
 pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
+    assert_eq!(dim.0 * dim.1, d.len());
     // sweep in 4 directions
     for k in 1..5 {
         for q in 0..dim.1 {
@@ -144,6 +149,27 @@ pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
     }
 }
 
+/// Computes the signed distance from the _zero_ level set of the function given by the values of
+/// `u` on a regular grid of dimensions `dim` to a preallocated array `d`.
+///
+/// `h` is the distance between neighboring nodes.
+///
+/// Returns `std::f64::MAX` if all `u` are positive (`-std::f64::MAX` if all `u` are negative).
+pub fn signed_distance(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
+    assert_eq!(dim.0 * dim.1, u.len());
+    assert_eq!(dim.0 * dim.1, d.len());
+                init_dist(d, u, dim);
+                fast_sweep_dist(d, dim);
+
+                for i in 0..d.len() {
+                    if u[i] < 0. {
+                        d[i] = -d[i] * h;
+                    } else {
+                        d[i] *= h;
+                    }
+                }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -163,17 +189,8 @@ mod test {
 
             let d = {
                 let mut d = vec![0f64; n * n];
-
-                init_dist(&mut d, &u, (n, n));
-                fast_sweep_dist(&mut d, (n, n));
-
-                for i in 0..d.len() {
-                    if u[i] < 0. {
-                        d[i] = -d[i];
-                    }
-                }
-
-                OwnedArray::from_shape_vec((n, n), d).unwrap() * (1. / (n - 1) as f64)
+                signed_distance(&mut d, &u, (n, n), 1. / (n - 1) as f64);
+                OwnedArray::from_shape_vec((n, n), d).unwrap()
             };
             d.all_close(&u_array, 0.00001)
         }
@@ -191,17 +208,8 @@ mod test {
 
             let d = {
                 let mut d = vec![0f64; n * n];
-
-                init_dist(&mut d, &u, (n, n));
-                fast_sweep_dist(&mut d, (n, n));
-
-                for i in 0..d.len() {
-                    if u[i] < 0. {
-                        d[i] = -d[i];
-                    }
-                }
-
-                OwnedArray::from_shape_vec((n, n), d).unwrap() * (1. / (n - 1) as f64)
+                signed_distance(&mut d, &u, (n, n), 1. / (n - 1) as f64);
+                OwnedArray::from_shape_vec((n, n), d).unwrap()
             };
 
             d.all_close(&u_array, 0.00001)

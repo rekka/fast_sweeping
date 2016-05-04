@@ -1,6 +1,7 @@
 extern crate fast_sweeping;
 extern crate gnuplot;
 
+#[allow(unused_imports)]
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor,
             ContourStyle, AutoOption};
 use fast_sweeping::*;
@@ -27,10 +28,10 @@ fn main() {
     }
 
     // initial data
-    let orig = u.clone();
+    // let orig = u.clone();
     let mut d_prev: Option<Vec<_>> = None;
 
-    for t in 0..t_max {
+    for _ in 0..t_max {
         // compute distance function
         let mut d = vec![0f64; (n + 1) * (n + 1)];
 

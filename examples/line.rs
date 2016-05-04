@@ -1,6 +1,7 @@
 extern crate fast_sweeping;
 extern crate gnuplot;
 
+#[allow(unused_imports)]
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor};
 use fast_sweeping::*;
 

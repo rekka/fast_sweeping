@@ -1,6 +1,9 @@
 //! The fast sweeping method for the computation of the signed distance function in 2D.
 //!
+//! ## References
 //!
+//! [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
+//! 603–627.
 
 /// Computes the signed distance function from a line segment given as the _zero_ level set of a
 /// linear function on an isosceles right-angle triangle.

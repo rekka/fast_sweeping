@@ -2,6 +2,7 @@
 authors = ["Norbert Pozar <bertapozar@gmail.com>"]
 name = "fast_sweeping"
 version = "0.0.1"
+license = "MIT"
 
 [dependencies]
 

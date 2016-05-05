@@ -5,7 +5,7 @@
 /// Computes the signed distance function from a line segment given as the _zero_ level set of a
 /// linear function on an isosceles right-angle triangle.
 ///
-/// Inputs are `u`, the values at the verteces. The vertex 0 is the one with the right angle.
+/// Inputs are `u`, the values at the vertices. The vertex 0 is the one with the right angle.
 ///
 /// The function returns the values of the signed distance function or `None` if the zero level set
 /// does not pass through the triangle.
@@ -34,7 +34,7 @@ pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
                 (0., _, _) => Some([0., 1., 1.]),
                 (_, 0., _) => Some([1., 0., (2f64).sqrt()]),
                 (_, _, 0.) => Some([1., (2f64).sqrt(), 0.]),
-                    _ => None
+                _ => None,
             };
         } else {
             // u[2] < 0.
@@ -85,6 +85,12 @@ pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
 
 /// Initializes distance around the free boundary.
 ///
+/// Based on the level set function with values `u` given on a regular grid, it stores the distance
+/// to the _zero_ level set in the nodes of triangles through which the level set passes. Stores
+/// the result in the preallocated slice `d`.
+///
+/// Nodes away from the boundary have their value set to `std::f64::MAX`.
+///
 /// Splits every square into two triangles and computes the distance on each of them.
 pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     let (nx, ny) = dim;
@@ -125,12 +131,12 @@ pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
         for q in 0..ny {
             let j = match k {
                 3 | 4 => ny - 1 - q,
-                _ => q
+                _ => q,
             };
             for p in 0..nx {
                 let i = match k {
                     2 | 3 => nx - 1 - p,
-                    _ => p
+                    _ => p,
                 };
                 let s = j * nx + i;
                 let a = if i == 0 {
@@ -190,26 +196,26 @@ mod test {
     use self::ndarray::Si;
 
     fn check_line(gx: f64, gy: f64, c: f64, n: usize, tol: f64, print: bool) -> bool {
-            let xs = OwnedArray::linspace(0., 1., n);
-            let ys = OwnedArray::linspace(0., 1., n);
-            let u_array = {
-                let mut u_array = xs.broadcast((n, n)).unwrap().to_owned();
-                u_array.zip_mut_with(&ys.broadcast((n, n)).unwrap().t(),
-                                     |x, y| *x = *x * gx + *y * gy + c);
-                u_array
-            };
-            let u = u_array.as_slice().unwrap();
+        let xs = OwnedArray::linspace(0., 1., n);
+        let ys = OwnedArray::linspace(0., 1., n);
+        let u_array = {
+            let mut u_array = xs.broadcast((n, n)).unwrap().to_owned();
+            u_array.zip_mut_with(&ys.broadcast((n, n)).unwrap().t(),
+                                 |x, y| *x = *x * gx + *y * gy + c);
+            u_array
+        };
+        let u = u_array.as_slice().unwrap();
 
-            let d = {
-                let mut d = vec![0f64; n * n];
-                signed_distance(&mut d, &u, (n, n), 1. / (n - 1) as f64);
-                OwnedArray::from_shape_vec((n, n), d).unwrap()
-            };
-            if print {
-                println!("{}", u_array);
-                println!("{}", d);
-            }
-            d.all_close(&u_array, tol)
+        let d = {
+            let mut d = vec![0f64; n * n];
+            signed_distance(&mut d, &u, (n, n), 1. / (n - 1) as f64);
+            OwnedArray::from_shape_vec((n, n), d).unwrap()
+        };
+        if print {
+            println!("{}", u_array);
+            println!("{}", d);
+        }
+        d.all_close(&u_array, tol)
     }
 
     #[test]
@@ -230,8 +236,13 @@ mod test {
 
     #[test]
     fn it_works_for_diagonal() {
-        assert!(check_line((0.5f64).sqrt(),(0.5f64).sqrt(), -(0.5f64).sqrt(), 9, 1e-6, false));
-        assert!(check_line(-(0.5f64).sqrt(),(0.5f64).sqrt(), 0., 9, 1e-6, false));
+        assert!(check_line((0.5f64).sqrt(),
+                           (0.5f64).sqrt(),
+                           -(0.5f64).sqrt(),
+                           9,
+                           1e-6,
+                           false));
+        assert!(check_line(-(0.5f64).sqrt(), (0.5f64).sqrt(), 0., 9, 1e-6, false));
     }
 
     #[test]
@@ -284,7 +295,8 @@ mod test {
     #[test]
     fn simple_triangles() {
         assert_eq!(triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
-        assert_eq!(triangle_dist([-1., 0., 0.]), Some([(0.5f64).sqrt(), 0., 0.]));
+        assert_eq!(triangle_dist([-1., 0., 0.]),
+                   Some([(0.5f64).sqrt(), 0., 0.]));
         assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
         assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
         assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));

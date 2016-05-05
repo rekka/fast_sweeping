@@ -25,7 +25,17 @@ pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
 
     if u[1] >= 0. {
         if u[2] >= 0. {
-            return None;
+            // well isn't this ugly
+            return match (u[0], u[1], u[2]) {
+                (0., 0., 0.) => Some([0., 0., 0.]),
+                (_, 0., 0.) => Some([(0.5f64).sqrt(), 0., 0.]),
+                (0., _, 0.) => Some([0., 1., 0.]),
+                (0., 0., _) => Some([0., 0., 1.]),
+                (0., _, _) => Some([0., 1., 1.]),
+                (_, 0., _) => Some([1., 0., (2f64).sqrt()]),
+                (_, _, 0.) => Some([1., (2f64).sqrt(), 0.]),
+                    _ => None
+            };
         } else {
             // u[2] < 0.
             // intersect position
@@ -77,26 +87,27 @@ pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
 ///
 /// Splits every square into two triangles and computes the distance on each of them.
 pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
-    assert_eq!(dim.0 * dim.1, u.len());
-    assert_eq!(dim.0 * dim.1, d.len());
+    let (nx, ny) = dim;
+    assert_eq!(nx * ny, u.len());
+    assert_eq!(nx * ny, d.len());
 
     for i in 0..d.len() {
         d[i] = std::f64::MAX;
     }
 
-    for j in 1..dim.1 {
-        for i in 1..dim.0 {
-            let s = j * dim.0 + i;
-            let r = triangle_dist([u[s - dim.0 - 1], u[s - dim.0], u[s - 1]]);
+    for j in 1..ny {
+        for i in 1..nx {
+            let s = j * nx + i;
+            let r = triangle_dist([u[s - nx - 1], u[s - nx], u[s - 1]]);
             if let Some(e) = r {
-                d[s - dim.0 - 1] = e[0].min(d[s - dim.0 - 1]);
-                d[s - dim.0] = e[1].min(d[s - dim.0]);
+                d[s - nx - 1] = e[0].min(d[s - nx - 1]);
+                d[s - nx] = e[1].min(d[s - nx]);
                 d[s - 1] = e[2].min(d[s - 1]);
             }
-            let r = triangle_dist([u[s], u[s - dim.0], u[s - 1]]);
+            let r = triangle_dist([u[s], u[s - nx], u[s - 1]]);
             if let Some(e) = r {
                 d[s] = e[0].min(d[s]);
-                d[s - dim.0] = e[1].min(d[s - dim.0]);
+                d[s - nx] = e[1].min(d[s - nx]);
                 d[s - 1] = e[2].min(d[s - 1]);
             }
         }
@@ -107,35 +118,34 @@ pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
 ///
 /// `d` should be initialized to large values at the unknown nodes.
 pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
-    assert_eq!(dim.0 * dim.1, d.len());
+    let (nx, ny) = dim;
+    assert_eq!(nx * ny, d.len());
     // sweep in 4 directions
     for k in 1..5 {
-        for q in 0..dim.1 {
-            let j = if k == 3 || k == 4 {
-                dim.1 - 1 - q
-            } else {
-                q
+        for q in 0..ny {
+            let j = match k {
+                3 | 4 => ny - 1 - q,
+                _ => q
             };
-            for p in 0..dim.0 {
-                let i = if k == 2 || k == 3 {
-                    dim.0 - 1 - p
-                } else {
-                    p
+            for p in 0..nx {
+                let i = match k {
+                    2 | 3 => nx - 1 - p,
+                    _ => p
                 };
-                let s = j * dim.0 + i;
+                let s = j * nx + i;
                 let a = if i == 0 {
                     d[s + 1]
-                } else if i == dim.0 - 1 {
+                } else if i == nx - 1 {
                     d[s - 1]
                 } else {
                     d[s - 1].min(d[s + 1])
                 };
                 let b = if j == 0 {
-                    d[s + dim.0]
-                } else if j == dim.1 - 1 {
-                    d[s - dim.0]
+                    d[s + nx]
+                } else if j == ny - 1 {
+                    d[s - nx]
                 } else {
-                    d[s - dim.0].min(d[s + dim.0])
+                    d[s - nx].min(d[s + nx])
                 };
                 let x = if (a - b).abs() >= 1. {
                     a.min(b) + 1.
@@ -179,13 +189,15 @@ mod test {
     use self::ndarray::prelude::*;
     use self::ndarray::Si;
 
-    #[test]
-    fn it_works_for_x_axis_line() {
-        fn prop(y: f64) -> bool {
-            let n = 9;
-            let y = (y - y.floor()) * 0.9 + 0.05;
-            let ys = OwnedArray::linspace(0. - y, 1. - y, n);
-            let u_array = ys.broadcast((n, n)).unwrap().t().to_owned();
+    fn check_line(gx: f64, gy: f64, c: f64, n: usize, tol: f64, print: bool) -> bool {
+            let xs = OwnedArray::linspace(0., 1., n);
+            let ys = OwnedArray::linspace(0., 1., n);
+            let u_array = {
+                let mut u_array = xs.broadcast((n, n)).unwrap().to_owned();
+                u_array.zip_mut_with(&ys.broadcast((n, n)).unwrap().t(),
+                                     |x, y| *x = *x * gx + *y * gy + c);
+                u_array
+            };
             let u = u_array.as_slice().unwrap();
 
             let d = {
@@ -193,7 +205,17 @@ mod test {
                 signed_distance(&mut d, &u, (n, n), 1. / (n - 1) as f64);
                 OwnedArray::from_shape_vec((n, n), d).unwrap()
             };
-            d.all_close(&u_array, 0.00001)
+            if print {
+                println!("{}", u_array);
+                println!("{}", d);
+            }
+            d.all_close(&u_array, tol)
+    }
+
+    #[test]
+    fn it_works_for_x_axis_line() {
+        fn prop(y: f64) -> bool {
+            check_line(0., 1., -((y - y.floor()) * 0.9 + 0.05), 9, 0.00001, false)
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -201,21 +223,15 @@ mod test {
     #[test]
     fn it_works_for_y_axis_line() {
         fn prop(x: f64) -> bool {
-            let n = 9;
-            let x = (x - x.floor()) * 0.9 + 0.05;
-            let xs = OwnedArray::linspace(0. - x, 1. - x, n);
-            let u_array = xs.broadcast((n, n)).unwrap().to_owned();
-            let u = u_array.as_slice().unwrap();
-
-            let d = {
-                let mut d = vec![0f64; n * n];
-                signed_distance(&mut d, &u, (n, n), 1. / (n - 1) as f64);
-                OwnedArray::from_shape_vec((n, n), d).unwrap()
-            };
-
-            d.all_close(&u_array, 0.00001)
+            check_line(1., 0., -((x - x.floor()) * 0.9 + 0.05), 9, 0.00001, false)
         }
         quickcheck(prop as fn(f64) -> bool);
+    }
+
+    #[test]
+    fn it_works_for_diagonal() {
+        assert!(check_line((0.5f64).sqrt(),(0.5f64).sqrt(), -(0.5f64).sqrt(), 9, 1e-6, false));
+        assert!(check_line(-(0.5f64).sqrt(),(0.5f64).sqrt(), 0., 9, 1e-6, false));
     }
 
     #[test]
@@ -263,5 +279,15 @@ mod test {
             }
         }
         quickcheck(prop as fn(f64, f64, f64) -> bool);
+    }
+
+    #[test]
+    fn simple_triangles() {
+        assert_eq!(triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
+        assert_eq!(triangle_dist([-1., 0., 0.]), Some([(0.5f64).sqrt(), 0., 0.]));
+        assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
+        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
+        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));
+        assert_eq!(triangle_dist([1., 1., 0.]), Some([1., (2f64).sqrt(), 0.]));
     }
 }

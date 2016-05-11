@@ -1,12 +1,13 @@
 [package]
 authors = ["Norbert Pozar <bertapozar@gmail.com>"]
+license = "MIT"
 name = "fast_sweeping"
 version = "0.0.1"
-license = "MIT"
 
 [dependencies]
 
 [dev-dependencies]
 gnuplot = "0.0.20"
 ndarray = "0.5.1"
+pbr = "0.1.2"
 quickcheck = "0.2.27"

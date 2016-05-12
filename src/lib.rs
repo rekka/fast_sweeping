@@ -5,169 +5,12 @@
 //! [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
 //! 603–627.
 
-/// Computes the signed distance function from a line segment given as the _zero_ level set of a
-/// linear function on an isosceles right-angle triangle.
-///
-/// Inputs are `u`, the values at the vertices. The vertex 0 is the one with the right angle.
-///
-/// The function returns the values of the signed distance function or `None` if the zero level set
-/// does not pass through the triangle.
-pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
-    let mut u = u;
-    // normalize so that u[0] >= 0.
-    if u[0] < 0. {
-        for u in &mut u {
-            *u = -*u;
-        }
-    }
+mod level_set;
+mod eikonal;
 
-    // gradient vector
-    let gx = u[1] - u[0];
-    let gy = u[2] - u[0];
-    let g_norm = (gx * gx + gy * gy).sqrt();
-
-    if u[1] >= 0. {
-        if u[2] >= 0. {
-            // well isn't this ugly
-            match (u[0], u[1], u[2]) {
-                (0., 0., 0.) => Some([0., 0., 0.]),
-                (_, 0., 0.) => Some([(0.5f64).sqrt(), 0., 0.]),
-                (0., _, 0.) => Some([0., 1., 0.]),
-                (0., 0., _) => Some([0., 0., 1.]),
-                (0., _, _) => Some([0., 1., 1.]),
-                (_, 0., _) => Some([1., 0., (2f64).sqrt()]),
-                (_, _, 0.) => Some([1., (2f64).sqrt(), 0.]),
-                _ => None,
-            }
-        } else {
-            // u[2] < 0.
-            // intersect position
-            let i02 = u[0] / (u[0] - u[2]);
-            let i12 = (2f64).sqrt() * u[1] / (u[1] - u[2]);
-            // find the direction of the gradient
-            // to deduce the vertex that is closest to the line
-            if gx <= 0. {
-                // 0
-                Some([u[0] / g_norm, i12, 1. - i02])
-            } else if gx > -gy {
-                // 1
-                Some([i02, u[1] / g_norm, (2f64).sqrt() - i12])
-            } else {
-                // 2
-                Some([i02, i12, -u[2] / g_norm])
-            }
-        }
-    } else if u[2] >= 0. { // u[1] < 0.
-            // intersect position
-            let i01 = u[0] / (u[0] - u[1]);
-            let i12 = (2f64).sqrt() * u[1] / (u[1] - u[2]);
-            // find the direction of the gradient
-            // to deduce the vertex that is closest to the line
-            if gy <= 0. {
-                // 0
-                Some([u[0] / g_norm, 1. - i01, (2f64).sqrt() - i12])
-            } else if -gx > gy {
-                // 1
-                Some([i01, -u[1] / g_norm, (2f64).sqrt() - i12])
-            } else {
-                // 2
-                Some([i01, i12, u[2] / g_norm])
-            }
-        } else {
-            // u[2] < 0.
-            // intersect position
-            let i10 = u[1] / (u[1] - u[0]);
-            let i20 = u[2] / (u[2] - u[0]);
-
-            Some([u[0] / g_norm, i10, i20])
-        }
-
-}
-
-/// Initializes distance around the free boundary.
-///
-/// Based on the level set function with values `u` given on a regular grid, it stores the distance
-/// to the _zero_ level set in the nodes of triangles through which the level set passes. Stores
-/// the result in the preallocated slice `d`.
-///
-/// Nodes away from the boundary have their value set to `std::f64::MAX`.
-///
-/// Splits every square into two triangles and computes the distance on each of them.
-pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
-    let (nx, ny) = dim;
-    assert_eq!(nx * ny, u.len());
-    assert_eq!(nx * ny, d.len());
-
-    for d in &mut *d {
-        *d = std::f64::MAX;
-    }
-
-    for j in 1..ny {
-        for i in 1..nx {
-            let s = j * nx + i;
-            let r = triangle_dist([u[s - nx - 1], u[s - nx], u[s - 1]]);
-            if let Some(e) = r {
-                d[s - nx - 1] = e[0].min(d[s - nx - 1]);
-                d[s - nx] = e[1].min(d[s - nx]);
-                d[s - 1] = e[2].min(d[s - 1]);
-            }
-            let r = triangle_dist([u[s], u[s - nx], u[s - 1]]);
-            if let Some(e) = r {
-                d[s] = e[0].min(d[s]);
-                d[s - nx] = e[1].min(d[s - nx]);
-                d[s - 1] = e[2].min(d[s - 1]);
-            }
-        }
-    }
-}
-
-/// Computes the solution of the eikonal equation in 2D using the Fast Sweeping algorithm.
-///
-/// `d` should be initialized to large values at the unknown nodes.
-pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
-    let (nx, ny) = dim;
-    assert_eq!(nx * ny, d.len());
-    // sweep in 4 directions
-    for k in 1..5 {
-        for q in 0..ny {
-            let j = match k {
-                3 | 4 => ny - 1 - q,
-                _ => q,
-            };
-            for p in 0..nx {
-                let i = match k {
-                    2 | 3 => nx - 1 - p,
-                    _ => p,
-                };
-                let s = j * nx + i;
-                let a = if i == 0 {
-                    d[s + 1]
-                } else if i == nx - 1 {
-                    d[s - 1]
-                } else {
-                    d[s - 1].min(d[s + 1])
-                };
-                let b = if j == 0 {
-                    d[s + nx]
-                } else if j == ny - 1 {
-                    d[s - nx]
-                } else {
-                    d[s - nx].min(d[s + nx])
-                };
-                let x = if (a - b).abs() >= 1. {
-                    a.min(b) + 1.
-                } else {
-                    0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt())
-                };
-
-                d[s] = d[s].min(x);
-            }
-        }
-    }
-}
-
-/// Computes the signed distance from the _zero_ level set of the function given by the values of
-/// `u` on a regular grid of dimensions `dim` and stores the result to a preallocated array `d`.
+/// Computes the signed distance from the _zero_ level set of the _linear_ function given by the
+/// values of `u` on a regular grid of dimensions `dim` and stores the result to a preallocated
+/// array `d`.
 ///
 /// `h` is the distance between neighboring nodes.
 ///
@@ -175,9 +18,10 @@ pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
 pub fn signed_distance(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
-    init_dist(d, u, dim);
-    fast_sweep_dist(d, dim);
+    level_set::init_dist(d, u, dim);
+    eikonal::fast_sweep_dist(d, dim);
 
+    // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {
         if u[i] < 0. {
             d[i] = -d[i] * h;
@@ -281,26 +125,4 @@ mod test {
         quickcheck(prop as fn(f64) -> bool);
     }
 
-    #[test]
-    fn it_is_nonnegative_on_triangle() {
-        fn prop(x: f64, y: f64, z: f64) -> bool {
-            if let Some(e) = triangle_dist([x, y, z]) {
-                e.into_iter().all(|&x| x >= 0.)
-            } else {
-                true
-            }
-        }
-        quickcheck(prop as fn(f64, f64, f64) -> bool);
-    }
-
-    #[test]
-    fn simple_triangles() {
-        assert_eq!(triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
-        assert_eq!(triangle_dist([-1., 0., 0.]),
-                   Some([(0.5f64).sqrt(), 0., 0.]));
-        assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
-        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
-        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));
-        assert_eq!(triangle_dist([1., 1., 0.]), Some([1., (2f64).sqrt(), 0.]));
-    }
 }

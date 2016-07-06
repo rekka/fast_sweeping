@@ -1,4 +1,41 @@
 use std;
+
+/// Computes the signed distance function from a plane given as the _zero_ level set of a
+/// linear function on a tetrahedron with right angle at the 0 vertex.
+///
+/// The vertex coordinates are: (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)
+///
+/// Inputs are `u`, the values at the vertices. The vertex 0 is the one with the right angle.
+///
+/// The function returns the values of the signed distance function or `None` if the zero level set
+/// does not pass through the tetrahedron.
+pub fn tetrahedron_dist(u: [f64; 4]) -> Option<[f64; 4]> {
+    let mut u = u;
+    let tiny = 1e-15;
+    // TODO:
+    // 1. add `tiny` if u[i] >= 0. to avoid degenerate case u[i] == 0. (this way u[i] can be only
+    //    positive or negative)
+    // 2. find the triangle of the level set withing the tetrahedron
+    // 3. compute the distance to the tetrahedron for each vertex
+    for u in &mut u {
+        if *u >= 0. {
+            *u += tiny;
+        }
+    }
+
+    for i in 0..3 {
+        for j in i+1..4 {
+        }
+    }
+
+    // gradient vector
+    let gx = u[1] - u[0];
+    let gy = u[2] - u[0];
+    let gz = u[3] - u[0];
+    let g_norm = (gx * gx + gy * gy + gz * gz).sqrt();
+
+    Some([0.; 4])
+}
 /// Computes the signed distance function from a line segment given as the _zero_ level set of a
 /// linear function on an isosceles right triangle.
 ///

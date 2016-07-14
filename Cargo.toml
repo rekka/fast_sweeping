@@ -5,6 +5,7 @@ name = "fast_sweeping"
 version = "0.0.1"
 
 [dependencies]
+ndarray = "0.6.0"
 
 [dependencies.surfviz]
 git = "https://github.com/rekka/surfviz-rs.git"
@@ -15,6 +16,7 @@ glium = "0.15.0"
 ndarray = "0.6.0"
 pbr = "0.1.2"
 quickcheck = "0.2.27"
+time = "0.1.35"
 
 [dev-dependencies.isosurface]
 git = "https://github.com/rekka/isosurface-rs.git"

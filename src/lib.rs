@@ -1,4 +1,4 @@
-//! The fast sweeping method for the computation of the signed distance function in 2D.
+//! The fast sweeping method for the computation of the signed distance function in 2D in 3D.
 //!
 //! ## References
 //!
@@ -14,7 +14,7 @@ mod eikonal;
 ///
 /// `h` is the distance between neighboring nodes.
 ///
-/// Returns `std::f64::MAX` if all `u` are positive (`-std::f64::MAX` if all `u` are negative).
+/// Returns `std::f64::MAX` if all `u` are nonnegative (`-std::f64::MAX` if all `u` are negative).
 pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
     assert_eq!(dim.0 * dim.1 * dim.2, u.len());
     assert_eq!(dim.0 * dim.1 * dim.2, d.len());
@@ -37,7 +37,7 @@ pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), 
 ///
 /// `h` is the distance between neighboring nodes.
 ///
-/// Returns `std::f64::MAX` if all `u` are positive (`-std::f64::MAX` if all `u` are negative).
+/// Returns `std::f64::MAX` if all `u` are nonnegative (`-std::f64::MAX` if all `u` are negative).
 pub fn signed_distance(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());

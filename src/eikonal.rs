@@ -67,9 +67,10 @@ pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
                         if x <= c {
                             x
                         } else {
-                            (1. / 3.) *
+                            let v = (1. / 3.) *
                             (a + b + c +
-                             (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt())
+                             (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
+                            v
                         }
                     };
 

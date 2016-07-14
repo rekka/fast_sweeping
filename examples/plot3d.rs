@@ -1,3 +1,4 @@
+extern crate fast_sweeping;
 extern crate surfviz;
 #[macro_use]
 extern crate glium;
@@ -13,6 +14,7 @@ use surfviz::camera;
 
 fn main() {
     let res = 10;
+    let h = 1. / res as f64;
     let xs = Array::linspace(-0.5, 0.5, res);
     let ys = Array::linspace(-0.5, 0.5, res);
     let zs = Array::linspace(-0.5, 0.5, res);
@@ -20,18 +22,26 @@ fn main() {
     let dim = (xs.len(), ys.len(), zs.len());
 
     let u = {
-        let mut u = Array::from_elem(dim, 0.);
+        let mut u: Array<f64, _> = Array::from_elem(dim, 0.);
 
         let r = 0.3;
         for ((i, j, k), u) in u.indexed_iter_mut() {
             let (x, y, z) = (xs[i], ys[j], zs[k]);
             *u = x * x + y * y + z * z - r * r;
+            *u = u.min((x - 0.25) * (x - 0.25) + y * y + z * z - 0.2 * 0.2);
         }
         u
     };
 
+    let mut d = u.clone();
+
+    let mut v = u.clone();
+    for _ in 0..10 {
+        fast_sweeping::signed_distance_3d(d.as_slice_mut().unwrap(), v.as_slice().unwrap(), dim, h);
+        v.clone_from(&d);
+    }
+
     let level = 0.0;
-    let (verts, faces, normals) = marching_tetrahedra(u.as_slice().unwrap(), dim, level);
 
     use glium::{DisplayBuild, Surface};
     let display = glium::glutin::WindowBuilder::new()
@@ -39,7 +49,15 @@ fn main() {
         .build_glium()
         .unwrap();
 
+    let (verts, faces, normals) = marching_tetrahedra(u.as_slice().unwrap(), dim, level);
     let surface = surface::Surface::new(&display, &verts, &faces, &normals);
+
+    let (verts, faces, normals) = marching_tetrahedra(d.as_slice().unwrap(), dim, level);
+    let signed_distance_surface = {
+        let mut s = surface::Surface::new(&display, &verts, &faces, &normals);
+        s.set_color([0., 0., 1., 1.]);
+        s
+    };
 
     let mut camera = camera::CameraState::new();
     let mut wireframe = false;
@@ -52,6 +70,7 @@ fn main() {
         target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
 
         surface.draw(&mut target, &camera, wireframe, show_normals).unwrap();
+        signed_distance_surface.draw(&mut target, &camera, wireframe, show_normals).unwrap();
 
         target.finish().unwrap();
 

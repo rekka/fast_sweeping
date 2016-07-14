@@ -27,8 +27,9 @@ fn main() {
         let r = 0.3;
         for ((i, j, k), u) in u.indexed_iter_mut() {
             let (x, y, z) = (xs[i], ys[j], zs[k]);
-            *u = x * x + y * y + z * z - r * r;
-            *u = u.min((x - 0.25) * (x - 0.25) + y * y + z * z - 0.2 * 0.2);
+            // *u = x * x + y * y + z * z - r * r;
+            // *u = u.min((x - 0.25) * (x - 0.25) + y * y + z * z - 0.2 * 0.2);
+            *u  = (x + y - z) / (3f64).sqrt();
         }
         u
     };
@@ -41,7 +42,7 @@ fn main() {
         v.clone_from(&d);
     }
 
-    let level = 0.0;
+    let level = 0.2;
 
     use glium::{DisplayBuild, Surface};
     let display = glium::glutin::WindowBuilder::new()

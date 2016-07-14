@@ -6,8 +6,16 @@ version = "0.0.1"
 
 [dependencies]
 
+[dependencies.surfviz]
+git = "https://github.com/rekka/surfviz-rs.git"
+optional = false
+
 [dev-dependencies]
-gnuplot = "0.0.20"
-ndarray = "0.5.1"
+glium = "0.15.0"
+ndarray = "0.6.0"
 pbr = "0.1.2"
 quickcheck = "0.2.27"
+
+[dev-dependencies.isosurface]
+git = "https://github.com/rekka/isosurface-rs.git"
+optional = false

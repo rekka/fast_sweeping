@@ -15,6 +15,29 @@ mod eikonal;
 /// `h` is the distance between neighboring nodes.
 ///
 /// Returns `std::f64::MAX` if all `u` are positive (`-std::f64::MAX` if all `u` are negative).
+pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
+    assert_eq!(dim.0 * dim.1 * dim.2, u.len());
+    assert_eq!(dim.0 * dim.1 * dim.2, d.len());
+    level_set::init_dist_3d(d, u, dim);
+    eikonal::fast_sweep_dist_3d(d, dim);
+
+    // compute the signed distance function from the solution of the eikonal equation
+    for i in 0..d.len() {
+        if u[i] < 0. {
+            d[i] = -d[i] * h;
+        } else {
+            d[i] *= h;
+        }
+    }
+}
+
+/// Computes the signed distance from the _zero_ level set of the _linear_ function given by the
+/// values of `u` on a regular grid of dimensions `dim` and stores the result to a preallocated
+/// array `d`.
+///
+/// `h` is the distance between neighboring nodes.
+///
+/// Returns `std::f64::MAX` if all `u` are positive (`-std::f64::MAX` if all `u` are negative).
 pub fn signed_distance(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());

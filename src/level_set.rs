@@ -82,83 +82,48 @@ pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
         }
     }
 }
-/// Computes the signed distance function from a line segment given as the _zero_ level set of a
-/// linear function on an isosceles right triangle.
+/// Computes the signed distance function from a line given as the _zero_ level set of a
+/// linear function on an isosceles right triangle. It preserves level sets of linear functions.
 ///
-/// Inputs are `u`, the values at the vertices. The vertex 0 is the one with the right angle.
+/// There does not see to be much point of trying to be smart and compute the distance to the line
+/// segments within the triangle. This shifts the level set even in a symmetric case when not
+/// needed. This simpler approach here seems to better preserve corners in the crystalline mean
+/// curvature flow.
 ///
-/// The function returns the values of the signed distance function or `None` if the zero level set
+/// Inputs are the values at the vertices. The vertex 0 is the one with the right angle.
+///
+/// The function returns the values of the distance function or `None` if the zero level set
 /// does not pass through the triangle.
 pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
     let mut u = u;
-    // normalize so that u[0] >= 0.
-    if u[0] < 0. {
-        for u in &mut u {
-            *u = -*u;
+
+    let mut n_pos = 0;
+    let mut n_neg = 0;
+    for u in &mut u {
+        if *u > 0. {
+            n_pos += 1;
+        } else if *u < 0. {
+            n_neg += 1;
         }
     }
+    // check if sign differs (level set goes throught the triangle)
+    if n_neg == 3 || n_pos == 3 {
+        return None;
+    }
 
-    // gradient vector
+    // everything is zero
+    if n_neg + n_pos == 0 {
+        return Some([0., 0., 0.]);
+    }
+
     let gx = u[1] - u[0];
     let gy = u[2] - u[0];
-    let g_norm = (gx * gx + gy * gy).sqrt();
+    let g_norm_rcp = 1. / (gx * gx + gy * gy).sqrt();
 
-    if u[1] >= 0. {
-        if u[2] >= 0. {
-            // well isn't this ugly, we need to handle possible zeros
-            match (u[0], u[1], u[2]) {
-                (0., 0., 0.) => Some([0., 0., 0.]),
-                (_, 0., 0.) => Some([(0.5f64).sqrt(), 0., 0.]),
-                (0., _, 0.) => Some([0., 1., 0.]),
-                (0., 0., _) => Some([0., 0., 1.]),
-                (0., _, _) => Some([0., 1., 1.]),
-                (_, 0., _) => Some([1., 0., (2f64).sqrt()]),
-                (_, _, 0.) => Some([1., (2f64).sqrt(), 0.]),
-                _ => None,
-            }
-        } else {
-            // u[2] < 0.
-            // intersect position
-            let i02 = u[0] / (u[0] - u[2]);
-            let i12 = (2f64).sqrt() * u[1] / (u[1] - u[2]);
-            // find the direction of the gradient
-            // to deduce the vertex that is closest to the line
-            if gx <= 0. {
-                // 0
-                Some([u[0] / g_norm, i12, 1. - i02])
-            } else if gx > -gy {
-                // 1
-                Some([i02, u[1] / g_norm, (2f64).sqrt() - i12])
-            } else {
-                // 2
-                Some([i02, i12, -u[2] / g_norm])
-            }
-        }
-    } else if u[2] >= 0. {
-        // u[1] < 0.
-        // intersect position
-        let i01 = u[0] / (u[0] - u[1]);
-        let i12 = (2f64).sqrt() * u[1] / (u[1] - u[2]);
-        // find the direction of the gradient
-        // to deduce the vertex that is closest to the line
-        if gy <= 0. {
-            // 0
-            Some([u[0] / g_norm, 1. - i01, (2f64).sqrt() - i12])
-        } else if -gx > gy {
-            // 1
-            Some([i01, -u[1] / g_norm, (2f64).sqrt() - i12])
-        } else {
-            // 2
-            Some([i01, i12, u[2] / g_norm])
-        }
-    } else {
-        // u[2] < 0.
-        // intersect position
-        let i10 = u[1] / (u[1] - u[0]);
-        let i20 = u[2] / (u[2] - u[0]);
-
-        Some([u[0] / g_norm, i10, i20])
+    for u in u.iter_mut() {
+        *u = u.abs() * g_norm_rcp;
     }
+    Some(u)
 
 }
 
@@ -206,11 +171,12 @@ mod test {
     #[test]
     fn simple_triangles() {
         assert_eq!(triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
-        assert_eq!(triangle_dist([-1., 0., 0.]),
-                   Some([(0.5f64).sqrt(), 0., 0.]));
+        assert_eq!(triangle_dist([1., 1., 1.]), None);
+        assert_eq!(triangle_dist([-1., -1., -1.]), None);
         assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
-        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
-        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));
-        assert_eq!(triangle_dist([1., 1., 0.]), Some([1., (2f64).sqrt(), 0.]));
+        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1./(2f64).sqrt(), 1./(2f64).sqrt()]));
+        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1./(2f64).sqrt(), 1./(2f64).sqrt()]));
+        assert_eq!(triangle_dist([1., 1., 0.]), Some([1., 1., 0.]));
+        assert_eq!(triangle_dist([-1., 0., 0.]), Some([1./(2f64).sqrt(), 0., 0.]));
     }
 }

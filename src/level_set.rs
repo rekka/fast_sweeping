@@ -129,14 +129,23 @@ pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
 
 /// Initializes the distance around the free boundary.
 ///
-/// Based on the level set function with values `u` given on a regular grid, it computes the
-/// distance from the _zero_ level set in the nodes of the triangles through which the level set
+/// Based on the _linear_ level set function with values `u` given on a regular grid, it computes the
+/// distance from the _zero_ level set (a line) in the nodes of the triangles through which the level set
 /// passes.  Stores the result in the preallocated slice `d`.
 ///
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
 /// Splits every square into two triangles and computes the distance on each of them.
-pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
+///
+/// ```text,ignore
+///   0,1 *----* 1,1
+///       |   /|
+///       |  / |
+///       | /  |
+///       |/   |
+///   0,0 *----* 1,0
+/// ```
+pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     let (nx, ny) = dim;
     assert_eq!(nx * ny, u.len());
     assert_eq!(nx * ny, d.len());
@@ -145,20 +154,17 @@ pub fn init_dist(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
         *d = std::f64::MAX;
     }
 
-    for j in 1..ny {
-        for i in 1..nx {
-            let s = j * nx + i;
-            let r = triangle_dist([u[s - nx - 1], u[s - nx], u[s - 1]]);
-            if let Some(e) = r {
-                d[s - nx - 1] = e[0].min(d[s - nx - 1]);
-                d[s - nx] = e[1].min(d[s - nx]);
-                d[s - 1] = e[2].min(d[s - 1]);
-            }
-            let r = triangle_dist([u[s], u[s - nx], u[s - 1]]);
-            if let Some(e) = r {
-                d[s] = e[0].min(d[s]);
-                d[s - nx] = e[1].min(d[s - nx]);
-                d[s - 1] = e[2].min(d[s - 1]);
+    for j in 1..nx {
+        for i in 1..ny {
+            let s = j * ny + i;
+            let vs = [[s - ny, s - ny - 1, s], [s - 1, s - ny - 1, s]];
+            for v in &vs {
+                let r = triangle_dist([u[v[0]], u[v[1]], u[v[2]]]);
+                if let Some(e) = r {
+                    for i in 0..3 {
+                        d[v[i]] = e[i].min(d[v[i]]);
+                    }
+                }
             }
         }
     }

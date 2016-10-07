@@ -3,7 +3,7 @@ extern crate gnuplot;
 
 #[allow(unused_imports)]
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor};
-use fast_sweeping::*;
+use fast_sweeping::signed_distance_2d;
 
 fn main() {
     let n = 64;
@@ -27,7 +27,7 @@ fn main() {
 
     let mut d = vec![0f64; (n + 1) * (n + 1)];
 
-    signed_distance(&mut d, &u, (n+1, n+1), h);
+    signed_distance_2d(&mut d, &u, (n+1, n+1), h);
 
     let mut err = d.clone();
     for (err, u) in err.iter_mut().zip(u.iter()) {

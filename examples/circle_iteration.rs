@@ -7,17 +7,16 @@ extern crate pbr;
 
 use ndarray::prelude::*;
 use ndarray::Data;
-use fast_sweeping::signed_distance;
+use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
               TextColor, ContourStyle, AutoOption};
-use std::cmp::min;
 use pbr::ProgressBar;
 
 fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix>,
                                     y: &ArrayBase<T, Ix>,
                                     f: F)
-                                    -> OwnedArray<C, (Ix, Ix)>
+                                    -> Array<C, (Ix, Ix)>
     where S: Data<Elem = A>,
           T: Data<Elem = B>,
           A: Copy,
@@ -32,7 +31,7 @@ fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix>,
         }
     }
 
-    OwnedArray::from_shape_vec(dim, r).unwrap()
+    Array::from_shape_vec(dim, r).unwrap()
 }
 
 fn main() {
@@ -45,8 +44,8 @@ fn main() {
 
     let r = 0.3;
 
-    let xs: OwnedArray<f64, _> = OwnedArray::linspace(-0.5, 0.5, n + 1);
-    let ys: OwnedArray<f64, _> = OwnedArray::linspace(-0.5, 0.5, n + 1);
+    let xs: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
+    let ys: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
     let mut u = tensor_product(&xs, &ys, |x, y| (x * x + y * y).sqrt() - r);
 
     // initial data
@@ -61,7 +60,7 @@ fn main() {
     for _ in 0..k {
         pb.inc();
         // compute the distance function
-        signed_distance(d.as_slice_mut().unwrap(), u.as_slice().unwrap(), dim, h);
+        signed_distance_2d(d.as_slice_mut().unwrap(), u.as_slice().unwrap(), dim, h);
         u.clone_from(&d);
 
         {

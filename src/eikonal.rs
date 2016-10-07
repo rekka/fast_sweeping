@@ -84,35 +84,35 @@ pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
 /// Computes the solution of the eikonal equation in 2D using the Fast sweeping algorithm.
 ///
 /// `d` should be initialized to a large value at the unknown nodes.
-pub fn fast_sweep_dist(d: &mut [f64], dim: (usize, usize)) {
+pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
     let (nx, ny) = dim;
     assert_eq!(nx * ny, d.len());
     // sweep in 4 directions
     for k in 1..5 {
-        for q in 0..ny {
+        for q in 0..nx {
             let j = match k {
-                3 | 4 => ny - 1 - q,
+                3 | 4 => nx - 1 - q,
                 _ => q,
             };
-            for p in 0..nx {
+            for p in 0..ny {
                 let i = match k {
-                    2 | 3 => nx - 1 - p,
+                    2 | 3 => ny - 1 - p,
                     _ => p,
                 };
-                let s = j * nx + i;
+                let s = j * ny + i;
                 let a = if i == 0 {
                     d[s + 1]
-                } else if i == nx - 1 {
+                } else if i == ny - 1 {
                     d[s - 1]
                 } else {
                     d[s - 1].min(d[s + 1])
                 };
                 let b = if j == 0 {
-                    d[s + nx]
-                } else if j == ny - 1 {
-                    d[s - nx]
+                    d[s + ny]
+                } else if j == nx - 1 {
+                    d[s - ny]
                 } else {
-                    d[s - nx].min(d[s + nx])
+                    d[s - ny].min(d[s + ny])
                 };
                 let x = if (a - b).abs() >= 1. {
                     a.min(b) + 1.

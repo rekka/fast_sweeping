@@ -8,21 +8,24 @@ use std;
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
-pub fn tetrahedron_dist(u: [f64; 4]) -> Option<[f64; 4]> {
-    let mut u = u;
-    let tiny = 1e-15;
-
+pub fn tetrahedron_dist(mut u: [f64; 4]) -> Option<[f64; 4]> {
     let mut n_pos = 0;
+    let mut n_neg = 0;
     for u in &mut u {
-        if *u >= 0. {
-            *u += tiny;
+        if *u > 0. {
             n_pos += 1;
+        } else if *u < 0. {
+            n_neg += 1;
         }
     }
-    // check if sign differs (level set goes throught the tetrahedron
-    if n_pos == 0 || n_pos == 4 {
-        // premature optimization: n_pos & 3 == 0 :)
+    // check if sign differs (level set goes throught the triangle)
+    if n_neg == 4 || n_pos == 4 {
         return None;
+    }
+
+    // everything is zero
+    if n_neg + n_pos == 0 {
+        return Some([0.; 4]);
     }
 
     let g_norm_rcp = 1. / u.windows(2).fold(0., |sum, x| sum + (x[1] - x[0]).powi(2)).sqrt();
@@ -94,9 +97,7 @@ pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
 ///
 /// The function returns the values of the distance function or `None` if the zero level set
 /// does not pass through the triangle.
-pub fn triangle_dist(u: [f64; 3]) -> Option<[f64; 3]> {
-    let mut u = u;
-
+pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
     let mut n_pos = 0;
     let mut n_neg = 0;
     for u in &mut u {

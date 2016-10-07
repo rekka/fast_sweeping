@@ -174,4 +174,54 @@ mod test {
         quickcheck(prop as fn(f64) -> bool);
     }
 
+    fn check_plane(gx: f64, gy: f64, gz: f64, c: f64, dim: (usize, usize, usize), tol: f64, print: bool) -> bool {
+        let (nx, ny, nz) = dim;
+        let xs = Array::linspace(0., 1., nx);
+        let ys = Array::linspace(0., (ny - 1) as f64 / (nx - 1) as f64, ny);
+        let zs = Array::linspace(0., (nz - 1) as f64 / (nx - 1) as f64, nz);
+        let u_array = {
+            let mut u_array = Array::zeros(dim);
+            for ((i, j, k), u) in u_array.indexed_iter_mut() {
+                let (x, y, z) = (xs[i], ys[j], zs[k]);
+                *u = x * gx + y * gy + z * gz + c;
+            }
+            u_array
+        };
+        let u = u_array.as_slice().unwrap();
+
+        let d = {
+            let mut d = vec![0f64; nx * ny * nz];
+            signed_distance_3d(&mut d, &u, dim, 1. / (nx - 1) as f64);
+            Array::from_shape_vec(dim, d).unwrap()
+        };
+        if print {
+            println!("{}", u_array);
+            println!("{}", d);
+        }
+        d.all_close(&u_array, tol)
+    }
+
+    #[test]
+    fn it_works_for_x_axis_plane() {
+        fn prop(x: f64) -> bool {
+            check_plane(1., 0., 0., -((x - x.floor()) * 0.9 + 0.05), (9, 14, 18), 1e-6, false)
+        }
+        quickcheck(prop as fn(f64) -> bool);
+    }
+
+    #[test]
+    fn it_works_for_y_axis_plane() {
+        fn prop(x: f64) -> bool {
+            check_plane(0., 1., 0., -((x - x.floor()) * 0.9 + 0.05), (9, 14, 18), 1e-6, false)
+        }
+        quickcheck(prop as fn(f64) -> bool);
+    }
+
+    #[test]
+    fn it_works_for_z_axis_plane() {
+        fn prop(x: f64) -> bool {
+            check_plane(0., 0., 1., -((x - x.floor()) * 0.9 + 0.05), (9, 14, 18), 1e-6, false)
+        }
+        quickcheck(prop as fn(f64) -> bool);
+    }
 }

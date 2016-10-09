@@ -13,3 +13,4 @@ gnuplot = "0.0.21"
 pbr = "0.1.2"
 quickcheck = "0.2.27"
 time = "0.1.35"
+isosurface = { git = "https://github.com/rekka/isosurface-rs.git" }

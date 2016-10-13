@@ -1,3 +1,5 @@
+use super::min;
+
 macro_rules! min_of {
     ( $d:ident, $s:expr, $i:expr, $ni:expr, $stride:expr ) => {
         if $i == 0 {
@@ -5,7 +7,7 @@ macro_rules! min_of {
         } else if $i == $ni - 1 {
             $d[$s - $stride]
         } else {
-            $d[$s - $stride].min($d[$s + $stride])
+            min($d[$s - $stride],$d[$s + $stride])
         };
     }
 }
@@ -74,7 +76,7 @@ pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
                         }
                     };
 
-                    d[s] = d[s].min(x);
+                    d[s] = min(d[s], x);
                 }
             }
         }
@@ -108,12 +110,12 @@ pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
                 let b = min_of!(d, s, j, ny, sy);
 
                 let x = if (a - b).abs() >= 1. {
-                    a.min(b) + 1.
+                    min(a, b) + 1.
                 } else {
                     0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt())
                 };
 
-                d[s] = d[s].min(x);
+                d[s] = min(d[s], x);
             }
         }
     }

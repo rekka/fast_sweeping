@@ -10,6 +10,16 @@
 mod level_set;
 mod eikonal;
 
+/// Implementation of min that compiles to the `minsd` instruction on intel.
+#[inline(always)]
+pub fn min(x: f64, y: f64) -> f64 {
+    if x > y {
+        y
+    } else {
+        x
+    }
+}
+
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
 /// `u` on a regular 3D grid of dimensions `dim` and stores the result in a preallocated array `d`.
 ///

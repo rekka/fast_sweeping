@@ -1,4 +1,5 @@
 use std;
+use super::min;
 
 /// Computes the signed distance function from a plane given as the _zero_ level set of a
 /// linear function on a tetrahedron at 4 points with unit coordinates starting at (0, 0, 0) and
@@ -77,7 +78,7 @@ pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
                     if let Some(r) = r {
                         for m in 0..4 {
                             let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
-                            d[q] = d[q].min(r[m]);
+                            d[q] = min(d[q],r[m]);
                         }
                     }
                 }
@@ -163,7 +164,7 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
                 let r = triangle_dist([u[v[0]], u[v[1]], u[v[2]]]);
                 if let Some(e) = r {
                     for i in 0..3 {
-                        d[v[i]] = e[i].min(d[v[i]]);
+                        d[v[i]] = min(e[i], d[v[i]]);
                     }
                 }
             }

@@ -41,7 +41,10 @@
 //! Disadvantages:
 //!
 //! - Introduces some more anisotropy.
-//! - Outside of corners the initial value is not really the distance to the level set but smaller.
+//! - The initial value outside of corners is not really the distance to the level set but smaller.
+//! But this does not seem to actually cause larger error in the circle test case, see
+//! `examples/error`. The error seems to be bigger _inside_ a circle. It appears that within small
+//! neighborhood (dist <= 3h) of the level set the max error of order h².
 //!
 //! For an example see `examples/redistance`.
 //!

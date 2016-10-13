@@ -4,6 +4,8 @@ extern crate fast_sweeping;
 extern crate ndarray;
 extern crate gnuplot;
 extern crate isosurface;
+extern crate docopt;
+extern crate rustc_serialize;
 
 use ndarray::prelude::*;
 use ndarray::Data;
@@ -11,6 +13,27 @@ use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
               TextColor, ContourStyle, AutoOption};
+
+const USAGE: &'static str = "
+Show effect of redistance.
+
+Usage:
+  redistance [options]
+  redistance (-h | --help)
+  redistance --version
+
+Options:
+  -n INT                Mesh  resolution (n^2). [default: 8]
+  --svg FILE            Produce svg output to FILE.
+  -h, --help            Show this screen.
+  --version             Show version.
+";
+
+#[derive(Debug, RustcDecodable)]
+pub struct Args {
+    flag_n: usize,
+    flag_svg: Option<String>,
+}
 
 fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix>,
                                     y: &ArrayBase<T, Ix>,
@@ -34,13 +57,17 @@ fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix>,
 }
 
 fn main() {
-    let n = 8;
+    let args: Args = docopt::Docopt::new(USAGE)
+        .and_then(|d| d.decode())
+        .unwrap_or_else(|e| e.exit());
+
+    let n = args.flag_n;
     let dim = (n + 1, n + 1);
 
     let h = 1. / n as f64;
 
-    let k = 10;
-    let k1 = 100;
+    let k = 1;
+    let k1 = 10 - k;
 
     let r = 0.3;
 
@@ -70,6 +97,9 @@ fn main() {
     let ex_verts = isosurface::marching_triangles(u.as_slice().unwrap(), dim, 0.);
 
     let mut fg = Figure::new();
+    if let Some(f) = args.flag_svg {
+        fg.set_terminal("svg size 1280, 1280", &f);
+    }
 
     {
         {

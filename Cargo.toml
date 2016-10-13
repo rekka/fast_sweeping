@@ -5,12 +5,16 @@ name = "fast_sweeping"
 version = "0.0.1"
 
 [dependencies]
+docopt = "0.6.86"
+rustc-serialize = "0.3.19"
 
 [dev-dependencies]
-ndarray = "0.6.0"
 glium = "0.15.0"
 gnuplot = "0.0.21"
+ndarray = "0.6.0"
 pbr = "0.1.2"
 quickcheck = "0.2.27"
 time = "0.1.35"
-isosurface = { git = "https://github.com/rekka/isosurface-rs.git" }
+
+[dev-dependencies.isosurface]
+git = "https://github.com/rekka/isosurface-rs.git"

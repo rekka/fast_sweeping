@@ -5,10 +5,10 @@ name = "fast_sweeping"
 version = "0.0.1"
 
 [dependencies]
-docopt = "0.6.86"
 rustc-serialize = "0.3.19"
 
 [dev-dependencies]
+docopt = "0.6.86"
 glium = "0.15.0"
 gnuplot = "0.0.21"
 ndarray = "0.6.0"

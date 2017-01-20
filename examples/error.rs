@@ -76,7 +76,7 @@ fn main() {
 
     signed_distance_2d(d.as_slice_mut().unwrap(), u.as_slice().unwrap(), dim, h);
 
-    let diff = ((d - u.mapv(|x| if x.abs() > 3. * h { std::f64::NAN } else { x })) / h).mapv(|x| x.abs());
+    let diff = ((d - u.mapv(|x| if x.abs() > 1.5 * h { std::f64::NAN } else { x })) / h).mapv(|x| x.abs());
 
     let m = diff.fold(0f64, |m, &x| m.max(x));
 

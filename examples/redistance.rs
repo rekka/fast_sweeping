@@ -74,6 +74,7 @@ fn main() {
     let xs: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
     let ys: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
     let mut u = tensor_product(&xs, &ys, |x, y| (x * x + y * y).sqrt() - r + 0.2 * (x * 12.).sin());
+    // let mut u = tensor_product(&xs, &ys, |x, y| (x * x + y * y).sqrt() - r);
 
     // initial data
     let mut d = u.clone();

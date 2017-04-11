@@ -22,23 +22,11 @@ pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
     // sweep in 8 directions
     for m in 0..8 {
         for p in 0..nx {
-            let i = if m & 0b001 == 0 {
-                nx - 1 - p
-            } else {
-                p
-            };
+            let i = if m & 0b001 == 0 { nx - 1 - p } else { p };
             for q in 0..ny {
-                let j = if m & 0b010 == 0 {
-                    ny - 1 - q
-                } else {
-                    q
-                };
+                let j = if m & 0b010 == 0 { ny - 1 - q } else { q };
                 for r in 0..nz {
-                    let k = if m & 0b100 == 0 {
-                        nz - 1 - r
-                    } else {
-                        r
-                    };
+                    let k = if m & 0b100 == 0 { nz - 1 - r } else { r };
 
                     let s = i * sx + j * sy + k * sz;
 
@@ -70,8 +58,9 @@ pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
                             x
                         } else {
                             let v = (1. / 3.) *
-                            (a + b + c +
-                             (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
+                                    (a + b + c +
+                                     (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c))
+                                         .sqrt());
                             v
                         }
                     };
@@ -93,17 +82,9 @@ pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
     // sweep in 4 directions
     for m in 0..4 {
         for p in 0..nx {
-            let i = if m & 0b001 == 0 {
-                nx - 1 - p
-            } else {
-                p
-            };
+            let i = if m & 0b001 == 0 { nx - 1 - p } else { p };
             for q in 0..ny {
-                let j = if m & 0b010 == 0 {
-                    ny - 1 - q
-                } else {
-                    q
-                };
+                let j = if m & 0b010 == 0 { ny - 1 - q } else { q };
 
                 let s = i * sx + j * sy;
                 let a = min_of!(d, s, i, nx, sx);

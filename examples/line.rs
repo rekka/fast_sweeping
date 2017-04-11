@@ -15,10 +15,10 @@ fn main() {
     let gx = ta.cos();
     let gy = ta.sin();
 
-    let c = - (gx + gy) * n as f64 * 0.5 * h;
+    let c = -(gx + gy) * n as f64 * 0.5 * h;
 
-    for i in 0..(n+1) {
-        for j in 0..(n+1) {
+    for i in 0..(n + 1) {
+        for j in 0..(n + 1) {
             let x = i as f64 * h;
             let y = j as f64 * h;
             u[i + j * (n + 1)] = x * gx + y * gy + c;
@@ -27,7 +27,7 @@ fn main() {
 
     let mut d = vec![0f64; (n + 1) * (n + 1)];
 
-    signed_distance_2d(&mut d, &u, (n+1, n+1), h);
+    signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
 
     let mut err = d.clone();
     for (err, u) in err.iter_mut().zip(u.iter()) {
@@ -39,7 +39,6 @@ fn main() {
     fg.axes3d()
         .surface(&err, n+1, n+1, None, &[])
         // .surface(&d, n+1, n+1, None, &[])
-        .surface(&u, n+1, n+1, None, &[])
-        ;
+        .surface(&u, n+1, n+1, None, &[]);
     fg.show();
 }

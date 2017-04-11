@@ -13,8 +13,8 @@ fn main() {
 
     let r = 0.3;
 
-    for i in 0..(n+1) {
-        for j in 0..(n+1) {
+    for i in 0..(n + 1) {
+        for j in 0..(n + 1) {
             let x = i as f64 * h - 0.5;
             let y = j as f64 * h - 0.5;
             u[i + j * (n + 1)] = (x * x + y * y).sqrt() - r;
@@ -25,7 +25,7 @@ fn main() {
 
     let mut d = vec![0f64; (n + 1) * (n + 1)];
 
-    signed_distance_2d(&mut d, &u, (n+1,n+1), h);
+    signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
     u.clone_from(&d);
 
     let mut err = d.clone();

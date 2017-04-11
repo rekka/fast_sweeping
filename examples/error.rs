@@ -1,5 +1,6 @@
 //! Visualizes the error of fast sweeping.
 extern crate fast_sweeping;
+#[macro_use(s)]
 extern crate ndarray;
 extern crate gnuplot;
 extern crate isosurface;
@@ -8,10 +9,11 @@ extern crate rustc_serialize;
 
 use ndarray::prelude::*;
 use ndarray::Data;
+use ndarray::Zip;
 use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
-use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
-              TextColor, ContourStyle, AutoOption};
+use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor,
+              ContourStyle, AutoOption};
 use std::f64::NAN;
 
 const USAGE: &'static str = "
@@ -24,6 +26,7 @@ Usage:
 
 Options:
   -n INT                Mesh  resolution (n^2). [default: 16]
+  --delta FLOAT         Size of neighborhood rel. to 1 / n [default: 1.5]
   --svg FILE            Produce svg output to FILE.
   -h, --help            Show this screen.
   --version             Show version.
@@ -33,12 +36,10 @@ Options:
 pub struct Args {
     flag_n: usize,
     flag_svg: Option<String>,
+    flag_delta: f64,
 }
 
-fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>,
-                                    y: &ArrayBase<T, Ix1>,
-                                    f: F)
-                                    -> Array2<C>
+fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>, y: &ArrayBase<T, Ix1>, f: F) -> Array2<C>
     where S: Data<Elem = A>,
           T: Data<Elem = B>,
           A: Copy,
@@ -47,8 +48,8 @@ fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>,
 {
     let dim = (x.len(), y.len());
     let mut r = Vec::with_capacity(dim.0 * dim.1);
-    for j in 0..dim.1 {
-        for i in 0..dim.0 {
+    for i in 0..dim.0 {
+        for j in 0..dim.1 {
             r.push(f(x[i], y[j]));
         }
     }
@@ -57,19 +58,18 @@ fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>,
 }
 
 fn main() {
-    let args: Args = docopt::Docopt::new(USAGE)
-        .and_then(|d| d.decode())
-        .unwrap_or_else(|e| e.exit());
+    let args: Args =
+        docopt::Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
 
     let n = args.flag_n;
-    let dim = (n + 1, n + 1);
 
     let h = 1. / n as f64;
+    let delta = args.flag_delta * h;
 
     let r = 0.3;
 
-    let xs: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
-    let ys: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
+    let xs: Array1<f64> = Array::linspace(-0.5, 0.5, n + 1);
+    let ys: Array1<f64> = Array::linspace(-0.5, 0.5, n + 1);
     let u = tensor_product(&xs, &ys, |x, y| (x * x + y * y).sqrt() - r);
     let gu = tensor_product(&xs, &ys, |x, y| {
         let norm = (x * x + y * y).sqrt();
@@ -83,13 +83,43 @@ fn main() {
     // initial data
     let mut d = u.clone();
 
-    signed_distance_2d(d.as_slice_mut().unwrap(), u.as_slice().unwrap(), dim, h);
+    signed_distance_2d(d.as_slice_mut().unwrap(), u.as_slice().unwrap(), u.dim(), h);
 
-    let diff = ((d - u.mapv(|x| if x.abs() > 1.5 * h { NAN } else { x })) / h).mapv(|x| x.abs());
+    let mut diff = u.clone();
+
+    Zip::from(&mut diff).and(&d).apply(|diff, &d| {
+        *diff = if diff.abs() > delta {
+            NAN
+        } else {
+            (*diff - d).abs()
+        }
+    });
+
+    let mut gdiff = u.slice(s![1..-1, 1..-1]).to_owned();
+
+    Zip::from(&mut gdiff)
+        .and(d.slice(s![..-2, 1..-1]))
+        .and(d.slice(s![2.., 1..-1]))
+        .and(d.slice(s![1..-1, ..-2]))
+        .and(d.slice(s![1..-1, 2..]))
+        .and(gu.slice(s![1..-1, 1..-1]))
+        .apply(|gdiff, &xm, &xp, &ym, &yp, &gu| {
+            let dx = (xp - xm) / (2. * h) - gu.0;
+            let dy = (yp - ym) / (2. * h) - gu.1;
+
+            *gdiff = if gdiff.abs() > delta {
+                NAN
+            } else {
+                (dx * dx + dy * dy).sqrt()
+            }
+        });
 
     let m = diff.fold(0f64, |m, &x| m.max(x));
+    let gm = gdiff.fold(0f64, |m, &x| m.max(x));
 
-    println!("max error = {} * h", m);
+    println!("max error = {} * h", m / h);
+    println!("max grad error = {}", gm);
+    println!("max grad error = {} * h", gm / h);
 
     let mut fg = Figure::new();
     if let Some(f) = args.flag_svg {
@@ -97,8 +127,13 @@ fn main() {
     }
 
     fg.axes3d()
+        .set_title("Max gradient error", &[])
         .set_view_map()
         .set_aspect_ratio(AutoOption::Fix(1.))
-        .surface(diff.iter(), diff.dim().0, diff.dim().1, None, &[]);
+        .surface(gdiff.iter(),
+                 gdiff.dim().0,
+                 gdiff.dim().1,
+                 Some((-0.5, -0.5, 0.5, 0.5)),
+                 &[]);
     fg.show();
 }

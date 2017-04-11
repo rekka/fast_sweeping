@@ -78,7 +78,7 @@ pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
                     if let Some(r) = r {
                         for m in 0..4 {
                             let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
-                            d[q] = min(d[q],r[m]);
+                            d[q] = min(d[q], r[m]);
                         }
                     }
                 }
@@ -131,9 +131,9 @@ pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
 
 /// Initializes the distance around the free boundary.
 ///
-/// Based on the _linear_ level set function with values `u` given on a regular grid, it computes the
-/// distance from the _zero_ level set (a line) in the nodes of the triangles through which the level set
-/// passes.  Stores the result in the preallocated slice `d`.
+/// Based on the _linear_ level set function with values `u` given on a regular grid, it computes
+/// the distance from the _zero_ level set (a line) in the nodes of the triangles through which the
+/// level set passes.  Stores the result in the preallocated slice `d`.
 ///
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
@@ -182,9 +182,12 @@ mod test {
         assert_eq!(triangle_dist([1., 1., 1.]), None);
         assert_eq!(triangle_dist([-1., -1., -1.]), None);
         assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
-        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1./(2f64).sqrt(), 1./(2f64).sqrt()]));
-        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1./(2f64).sqrt(), 1./(2f64).sqrt()]));
+        assert_eq!(triangle_dist([0., -1., -1.]),
+                   Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()]));
+        assert_eq!(triangle_dist([0., 1., 1.]),
+                   Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()]));
         assert_eq!(triangle_dist([1., 1., 0.]), Some([1., 1., 0.]));
-        assert_eq!(triangle_dist([-1., 0., 0.]), Some([1./(2f64).sqrt(), 0., 0.]));
+        assert_eq!(triangle_dist([-1., 0., 0.]),
+                   Some([1. / (2f64).sqrt(), 0., 0.]));
     }
 }

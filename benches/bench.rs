@@ -23,9 +23,7 @@ mod bench {
             }
         }
 
-        b.iter(|| {
-            signed_distance_2d(&mut d, &u, dim, hx);
-        });
+        b.iter(|| { signed_distance_2d(&mut d, &u, dim, hx); });
     }
 
     #[bench]

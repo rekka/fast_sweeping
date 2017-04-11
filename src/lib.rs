@@ -74,11 +74,7 @@ mod eikonal;
 /// Implementation of min that compiles to the `minsd` instruction on intel.
 #[inline(always)]
 fn min(x: f64, y: f64) -> f64 {
-    if x > y {
-        y
-    } else {
-        x
-    }
+    if x > y { y } else { x }
 }
 
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
@@ -186,7 +182,12 @@ mod test {
     #[test]
     fn it_works_for_x_axis_line() {
         fn prop(y: f64) -> bool {
-            check_line(0., 1., -((y - y.floor()) * 0.9 + 0.05), (9, 17), 0.00001, false)
+            check_line(0.,
+                       1.,
+                       -((y - y.floor()) * 0.9 + 0.05),
+                       (9, 17),
+                       0.00001,
+                       false)
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -194,7 +195,12 @@ mod test {
     #[test]
     fn it_works_for_y_axis_line() {
         fn prop(x: f64) -> bool {
-            check_line(1., 0., -((x - x.floor()) * 0.9 + 0.05), (16, 9), 0.00001, false)
+            check_line(1.,
+                       0.,
+                       -((x - x.floor()) * 0.9 + 0.05),
+                       (16, 9),
+                       0.00001,
+                       false)
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -245,7 +251,14 @@ mod test {
         quickcheck(prop as fn(f64) -> bool);
     }
 
-    fn check_plane(gx: f64, gy: f64, gz: f64, c: f64, dim: (usize, usize, usize), tol: f64, print: bool) -> bool {
+    fn check_plane(gx: f64,
+                   gy: f64,
+                   gz: f64,
+                   c: f64,
+                   dim: (usize, usize, usize),
+                   tol: f64,
+                   print: bool)
+                   -> bool {
         let (nx, ny, nz) = dim;
         let xs = Array::linspace(0., 1., nx);
         let ys = Array::linspace(0., (ny - 1) as f64 / (nx - 1) as f64, ny);
@@ -275,7 +288,13 @@ mod test {
     #[test]
     fn it_works_for_x_axis_plane() {
         fn prop(x: f64) -> bool {
-            check_plane(1., 0., 0., -((x - x.floor()) * 0.9 + 0.05), (9, 14, 18), 1e-6, false)
+            check_plane(1.,
+                        0.,
+                        0.,
+                        -((x - x.floor()) * 0.9 + 0.05),
+                        (9, 14, 18),
+                        1e-6,
+                        false)
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -283,7 +302,13 @@ mod test {
     #[test]
     fn it_works_for_y_axis_plane() {
         fn prop(x: f64) -> bool {
-            check_plane(0., 1., 0., -((x - x.floor()) * 0.9 + 0.05), (9, 14, 18), 1e-6, false)
+            check_plane(0.,
+                        1.,
+                        0.,
+                        -((x - x.floor()) * 0.9 + 0.05),
+                        (9, 14, 18),
+                        1e-6,
+                        false)
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -291,7 +316,13 @@ mod test {
     #[test]
     fn it_works_for_z_axis_plane() {
         fn prop(x: f64) -> bool {
-            check_plane(0., 0., 1., -((x - x.floor()) * 0.9 + 0.05), (9, 14, 18), 1e-6, false)
+            check_plane(0.,
+                        0.,
+                        1.,
+                        -((x - x.floor()) * 0.9 + 0.05),
+                        (9, 14, 18),
+                        1e-6,
+                        false)
         }
         quickcheck(prop as fn(f64) -> bool);
     }

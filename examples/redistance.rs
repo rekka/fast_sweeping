@@ -35,10 +35,10 @@ pub struct Args {
     flag_svg: Option<String>,
 }
 
-fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix>,
-                                    y: &ArrayBase<T, Ix>,
+fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>,
+                                    y: &ArrayBase<T, Ix1>,
                                     f: F)
-                                    -> Array<C, (Ix, Ix)>
+                                    -> Array<C, Ix2>
     where S: Data<Elem = A>,
           T: Data<Elem = B>,
           A: Copy,

@@ -12,6 +12,7 @@ use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
               TextColor, ContourStyle, AutoOption};
+use std::f64::NAN;
 
 const USAGE: &'static str = "
 Show effect of redistance.
@@ -70,13 +71,21 @@ fn main() {
     let xs: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
     let ys: Array<f64, _> = Array::linspace(-0.5, 0.5, n + 1);
     let u = tensor_product(&xs, &ys, |x, y| (x * x + y * y).sqrt() - r);
+    let gu = tensor_product(&xs, &ys, |x, y| {
+        let norm = (x * x + y * y).sqrt();
+        if norm > 0. {
+            (x / norm, y / norm)
+        } else {
+            (NAN, NAN)
+        }
+    });
 
     // initial data
     let mut d = u.clone();
 
     signed_distance_2d(d.as_slice_mut().unwrap(), u.as_slice().unwrap(), dim, h);
 
-    let diff = ((d - u.mapv(|x| if x.abs() > 1.5 * h { std::f64::NAN } else { x })) / h).mapv(|x| x.abs());
+    let diff = ((d - u.mapv(|x| if x.abs() > 1.5 * h { NAN } else { x })) / h).mapv(|x| x.abs());
 
     let m = diff.fold(0f64, |m, &x| m.max(x));
 

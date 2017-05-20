@@ -129,10 +129,34 @@ pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), 
 ///
 /// Returns `std::f64::MAX` if all `u` are nonnegative (`-std::f64::MAX` if all `u` are negative).
 pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
+    anisotropic_signed_distance_2d(d, u, dim, h,
+    |p| {
+        (p[0] * p[0] + p[1] * p[1]).sqrt()
+    },
+    |d, v, _| {
+                let a = v[0];
+                let b = v[1];
+
+                let x = if (a - b).abs() >= 1. {
+                    min(a, b) + 1.
+                } else {
+                    0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt())
+                };
+
+                min(d, x)
+    });
+}
+
+/// Computes the anisotropic signed distance function.
+pub fn anisotropic_signed_distance_2d<N, INV>(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64,
+                                      norm: N, inv_norm: INV)
+    where N: FnMut([f64; 2]) -> f64,
+          INV: FnMut(f64, [f64; 2], [f64; 2]) -> f64 {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
-    level_set::init_dist_2d(d, u, dim);
-    eikonal::fast_sweep_dist_2d(d, dim);
+
+    level_set::init_anisotropic_dist_2d(d, u, dim, norm);
+    eikonal::fast_sweep_anisotropic_dist_2d(d, dim, inv_norm);
 
     // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {
@@ -143,6 +167,28 @@ pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64)
         }
     }
 }
+
+pub mod legacy {
+    use super::*;
+
+    /// Original implementation (as in [Zhao])
+    pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
+        assert_eq!(dim.0 * dim.1, u.len());
+        assert_eq!(dim.0 * dim.1, d.len());
+        level_set::init_dist_2d(d, u, dim);
+        eikonal::fast_sweep_dist_2d(d, dim);
+
+        // compute the signed distance function from the solution of the eikonal equation
+        for i in 0..d.len() {
+            if u[i] < 0. {
+                d[i] = -d[i] * h;
+            } else {
+                d[i] *= h;
+            }
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod test {

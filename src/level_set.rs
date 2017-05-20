@@ -172,6 +172,64 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     }
 }
 
+pub fn triangle_dist_general<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64; 3]>
+    where F: FnMut([f64; 2]) -> f64 {
+    let mut n_pos = 0;
+    let mut n_neg = 0;
+    for u in &mut u {
+        if *u > 0. {
+            n_pos += 1;
+        } else if *u < 0. {
+            n_neg += 1;
+        }
+    }
+    // check if sign differs (level set goes throught the triangle)
+    if n_neg == 3 || n_pos == 3 {
+        return None;
+    }
+
+    // everything is zero
+    if n_neg + n_pos == 0 {
+        return Some([0., 0., 0.]);
+    }
+
+    let gx = u[1] - u[0];
+    let gy = u[2] - u[0];
+    let g_norm_rcp = 1. / norm([gx, gy]);
+
+    for u in u.iter_mut() {
+        *u = u.abs() * g_norm_rcp;
+    }
+    Some(u)
+
+}
+
+pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut norm: F)
+    where F: FnMut([f64; 2]) -> f64 {
+    let (nx, ny) = dim;
+    assert_eq!(nx * ny, u.len());
+    assert_eq!(nx * ny, d.len());
+
+    for d in &mut *d {
+        *d = std::f64::MAX;
+    }
+
+    for j in 1..nx {
+        for i in 1..ny {
+            let s = j * ny + i;
+            let vs = [[s - ny, s - ny - 1, s], [s - 1, s - ny - 1, s]];
+            for v in &vs {
+                let r = triangle_dist_general([u[v[0]], u[v[1]], u[v[2]]], &mut norm);
+                if let Some(e) = r {
+                    for i in 0..3 {
+                        d[v[i]] = min(e[i], d[v[i]]);
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

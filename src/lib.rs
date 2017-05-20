@@ -68,8 +68,8 @@
 //! [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
 //! 603–627.
 
-mod level_set;
-mod eikonal;
+pub mod level_set;
+pub mod eikonal;
 
 /// Implementation of min that compiles to the `minsd` instruction on intel.
 #[inline(always)]

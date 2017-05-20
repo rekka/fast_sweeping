@@ -9,6 +9,100 @@ use super::min;
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
+pub fn tetrahedron_anisotropic_dist<F>(mut u: [f64; 4], mut dual_norm: F) -> Option<[f64; 4]>
+    where F: FnMut([f64; 3]) -> f64
+{
+    let mut n_pos = 0;
+    let mut n_neg = 0;
+    for u in &mut u {
+        if *u > 0. {
+            n_pos += 1;
+        } else if *u < 0. {
+            n_neg += 1;
+        }
+    }
+    // check if sign differs (level set goes throught the triangle)
+    if n_neg == 4 || n_pos == 4 {
+        return None;
+    }
+
+    // everything is zero
+    if n_neg + n_pos == 0 {
+        return Some([0.; 4]);
+    }
+
+    // FIXME: this must account for actual the permutation of the axes!
+    let g_norm_rcp = 1. / dual_norm([u[1] - u[0], u[2] - u[1], u[3] - u[2]]);
+
+    for u in u.iter_mut() {
+        *u = u.abs() * g_norm_rcp;
+    }
+    Some(u)
+}
+
+/// Initializes the distance around the free boundary.
+///
+/// Based on the level set function with values `u` given on a regular grid, it computes the
+/// distance from the _zero_ level set in the nodes of the triangles through which the level set
+/// passes.  Stores the result in the preallocated slice `d`.
+///
+/// Nodes away from the boundary have their value set to `std::f64::MAX`.
+///
+/// Splits every square into two triangles and computes the distance on each of them.
+pub fn init_anisotropic_dist_3d<F>(d: &mut [f64],
+                                   u: &[f64],
+                                   dim: (usize, usize, usize),
+                                   mut dual_norm: F)
+    where F: FnMut([f64; 3]) -> f64
+{
+    let (nx, ny, nz) = dim;
+    assert_eq!(nx * ny * nz, u.len());
+    assert_eq!(nx * ny * nz, d.len());
+
+    for d in &mut *d {
+        *d = std::f64::MAX;
+    }
+
+    // split each cube into 6 tetrahedrons
+    let ids = [[(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
+               [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
+               [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
+               [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
+               [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
+               [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)]];
+
+    for i in 1..nx {
+        for j in 1..ny {
+            for k in 1..nz {
+                let s = i * ny * nz + j * nz + k;
+                let mut v = [0.; 4];
+
+                for idx in ids.iter() {
+                    for m in 0..4 {
+                        v[m] = u[s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2];
+                    }
+
+                    let r = tetrahedron_anisotropic_dist(v, &mut dual_norm);
+                    if let Some(r) = r {
+                        for m in 0..4 {
+                            let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
+                            d[q] = min(d[q], r[m]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Computes the signed distance function from a plane given as the _zero_ level set of a
+/// linear function on a tetrahedron at 4 points with unit coordinates starting at (0, 0, 0) and
+/// ending at (1, 1, 1), and in between exactly one coordinate changes from 0 to 1.
+///
+/// Inputs are `u`, the values at the vertices.
+///
+/// The function returns the values of the (non-signed) distance function or `None` if the zero
+/// level set does not pass through the tetrahedron.
 pub fn tetrahedron_dist(mut u: [f64; 4]) -> Option<[f64; 4]> {
     let mut n_pos = 0;
     let mut n_neg = 0;
@@ -89,6 +183,7 @@ pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
         }
     }
 }
+
 /// Computes the signed distance function from a line given as the _zero_ level set of a
 /// linear function on an isosceles right triangle. It preserves level sets of linear functions.
 ///

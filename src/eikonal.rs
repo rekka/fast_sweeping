@@ -12,6 +12,60 @@ macro_rules! min_of {
     }
 }
 
+pub fn fast_sweep_anisotropic_dist_3d<F>(d: &mut [f64],
+                                         dim: (usize, usize, usize),
+                                         mut inv_dual_norm: F)
+    where F: FnMut(f64, [f64; 3], [f64; 3]) -> f64
+{
+
+    let (nx, ny, nz) = dim;
+    assert_eq!(nx * ny * nz, d.len());
+    let (sx, sy, sz) = (ny * nz, nz, 1);
+    // sweep in 8 directions
+    for m in 0..8 {
+        for p in 1..nx {
+            let (i, ip, isign) = if m & 0b001 == 0 {
+                (nx - 1 - p, nx - 1 - p + 1, -1.)
+            } else {
+                (p, p - 1, 1.)
+            };
+            for q in 1..ny {
+                let (j, jp, jsign) = if m & 0b010 == 0 {
+                    (ny - 1 - q, ny - 1 - q + 1, -1.)
+                } else {
+                    (q, q - 1, 1.)
+                };
+
+                if m & 0b100 == 0 {
+                    let ksign = -1.;
+                    for k in (0..nz - 1).rev() {
+                        let kp = k + 1;
+                        let s = i * sx + j * sy + k * sz;
+
+                        d[s] = inv_dual_norm(d[s],
+                                             [d[ip * sx + j * sy + k * sz],
+                                              d[i * sx + jp * sy + k * sz],
+                                              d[i * sx + j * sy + kp * sz]],
+                                             [isign, jsign, ksign]);
+                    }
+                } else {
+                    let ksign = 1.;
+                    for k in 1..nz {
+                        let kp = k - 1;
+                        let s = i * sx + j * sy + k * sz;
+
+                        d[s] = inv_dual_norm(d[s],
+                                             [d[ip * sx + j * sy + k * sz],
+                                              d[i * sx + jp * sy + k * sz],
+                                              d[i * sx + j * sy + kp * sz]],
+                                             [isign, jsign, ksign]);
+                    }
+                }
+            }
+        }
+    }
+
+}
 /// Computes the solution of the eikonal equation in 2D using the Fast sweeping algorithm.
 ///
 /// `d` should be initialized to a large value at the unknown nodes.

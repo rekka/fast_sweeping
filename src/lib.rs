@@ -97,19 +97,77 @@ fn max(x: f64, y: f64) -> f64 {
 ///
 /// Returns `std::f64::MAX` if all `u` are positive and `-std::f64::MAX` if all `u` are negative.
 pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
-    assert_eq!(dim.0 * dim.1 * dim.2, u.len());
-    assert_eq!(dim.0 * dim.1 * dim.2, d.len());
-    level_set::init_dist_3d(d, u, dim);
-    eikonal::fast_sweep_dist_3d(d, dim);
+    anisotropic_signed_distance_3d(d,
+                                   u,
+                                   dim,
+                                   h,
+                                   |p| (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]).sqrt(),
+                                   |d, v, _| {
+        let (a, b, c) = {
+            use std::mem::swap;
+            let mut a = v[0];
+            let mut b = v[1];
+            let mut c = v[2];
 
-    // compute the signed distance function from the solution of the eikonal equation
-    for i in 0..d.len() {
-        if u[i] < 0. {
-            d[i] = -d[i] * h;
+            if a > b {
+                swap(&mut a, &mut b);
+            }
+            if b > c {
+                swap(&mut b, &mut c);
+            }
+            if a > b {
+                swap(&mut a, &mut b);
+            }
+
+            (a, b, c)
+        };
+
+        let x = if b >= a + 1. {
+            a + 1.
         } else {
-            d[i] *= h;
-        }
-    }
+            let x = 0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt());
+            if x <= c {
+                x
+            } else {
+                let v = (1. / 3.) *
+                        (a + b + c +
+                         (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
+                v
+            }
+        };
+
+        min(d, x)
+    });
+}
+
+pub fn max_signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
+    anisotropic_signed_distance_3d(d,
+                                   u,
+                                   dim,
+                                   h,
+                                   |p| p[0].abs() + p[1].abs() + p[2].abs(),
+                                   |d, v, _| {
+        let (a, b, c) = {
+            use std::mem::swap;
+            let mut a = v[0];
+            let mut b = v[1];
+            let mut c = v[2];
+
+            if a > b {
+                swap(&mut a, &mut b);
+            }
+            if b > c {
+                swap(&mut b, &mut c);
+            }
+            if a > b {
+                swap(&mut a, &mut b);
+            }
+
+            (a, b, c)
+        };
+        min(min(d, a + 1.),
+            min(0.5 * (a + b + 1.), (1. / 3.) * (a + b + c + 1.)))
+    });
 }
 
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
@@ -205,6 +263,31 @@ pub fn anisotropic_signed_distance_2d<N, INV>(d: &mut [f64],
     }
 }
 
+pub fn anisotropic_signed_distance_3d<N, INV>(d: &mut [f64],
+                                              u: &[f64],
+                                              dim: (usize, usize, usize),
+                                              h: f64,
+                                              dual_norm: N,
+                                              inv_dual_norm: INV)
+    where N: FnMut([f64; 3]) -> f64,
+          INV: FnMut(f64, [f64; 3], [f64; 3]) -> f64
+{
+    assert_eq!(dim.0 * dim.1 * dim.2, u.len());
+    assert_eq!(dim.0 * dim.1 * dim.2, d.len());
+
+    level_set::init_anisotropic_dist_3d(d, u, dim, dual_norm);
+    eikonal::fast_sweep_anisotropic_dist_3d(d, dim, inv_dual_norm);
+
+    // compute the signed distance function from the solution of the eikonal equation
+    for i in 0..d.len() {
+        if u[i] < 0. {
+            d[i] = -d[i] * h;
+        } else {
+            d[i] *= h;
+        }
+    }
+}
+
 pub mod legacy {
     use super::*;
 
@@ -214,6 +297,22 @@ pub mod legacy {
         assert_eq!(dim.0 * dim.1, d.len());
         level_set::init_dist_2d(d, u, dim);
         eikonal::fast_sweep_dist_2d(d, dim);
+
+        // compute the signed distance function from the solution of the eikonal equation
+        for i in 0..d.len() {
+            if u[i] < 0. {
+                d[i] = -d[i] * h;
+            } else {
+                d[i] *= h;
+            }
+        }
+    }
+
+    pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
+        assert_eq!(dim.0 * dim.1 * dim.2, u.len());
+        assert_eq!(dim.0 * dim.1 * dim.2, d.len());
+        level_set::init_dist_3d(d, u, dim);
+        eikonal::fast_sweep_dist_3d(d, dim);
 
         // compute the signed distance function from the solution of the eikonal equation
         for i in 0..d.len() {

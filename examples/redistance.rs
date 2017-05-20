@@ -123,11 +123,8 @@ fn main() {
                     .zip(&["blue", "red", "black"])
                     .zip(&[0, k, k + k1]) {
                 let mut q = 2;
-                for line in verts.chunks(2) {
-                    axes.lines(line.iter().map(|p| p[0]),
-                               line.iter().map(|p| p[1]),
-                               &[PlotOption::Color(c), PlotOption::Caption(&format!("{}", i))]
-                                    [..q]);
+                 for line in verts.components() {
+                     axes.lines(line.iter().map(|p| p[0]), line.iter().map(|p| p[1]), &[PlotOption::Color(c), PlotOption::Caption(&format!("{}", i))][..q]);
                     // add label only for the first line segment
                     if q > 1 {
                         q -= 1;

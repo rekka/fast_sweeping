@@ -5,7 +5,8 @@ extern crate gnuplot;
 use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
               TextColor, AutoOption, ContourStyle};
 use fast_sweeping::signed_distance_2d;
-use fast_sweeping::anisotropic_signed_distance_2d;
+use fast_sweeping::max_signed_distance_2d;
+use fast_sweeping::l1_signed_distance_2d;
 
 fn main() {
     let n = 64;
@@ -29,21 +30,8 @@ fn main() {
     let mut d = vec![0f64; (n + 1) * (n + 1)];
 
     // signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
-    // anisotropic_signed_distance_2d(&mut d, &u, (n + 1, n + 1), h, |p| {
-    //     p[0].abs().max(p[1].abs())
-    // }, |d, v, _| {
-    //     d.min(v[0].min(v[1]) + 1.)
-    // });
-    anisotropic_signed_distance_2d(&mut d,
-                                   &u,
-                                   (n + 1, n + 1),
-                                   h,
-                                   |p| p[0].abs() + p[1].abs(),
-                                   |d, v, _| {
-                                       d.min(v[0] + 1.)
-                                           .min(v[1] + 1.)
-                                           .min(0.5 * (v[0] + v[1] + 1.))
-                                   });
+    // max_signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
+    l1_signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
 
     u.clone_from(&d);
 

@@ -77,6 +77,12 @@ fn min(x: f64, y: f64) -> f64 {
     if x > y { y } else { x }
 }
 
+/// Implementation of max that compiles to the `maxsd` instruction on intel.
+#[inline(always)]
+fn max(x: f64, y: f64) -> f64 {
+    if x < y { y } else { x }
+}
+
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
 /// `u` on a regular 3D grid of dimensions `dim` and stores the result in a preallocated array `d`.
 ///
@@ -147,6 +153,24 @@ pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64)
         min(d, x)
     });
 }
+
+/// Signed distance in the max norm.
+pub fn max_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
+    anisotropic_signed_distance_2d(d, u, dim, h, |p| p[0].abs() + p[1].abs(), |d, v, _| {
+        min(min(d, v[0] + 1.), min(v[1] + 1., 0.5 * (v[0] + v[1] + 1.)))
+    });
+}
+
+/// Signed distance in the l¹ norm.
+pub fn l1_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
+    anisotropic_signed_distance_2d(d,
+                                   u,
+                                   dim,
+                                   h,
+                                   |p| max(p[0].abs(), p[1].abs()),
+                                   |d, v, _| min(d, min(v[0], v[1]) + 1.));
+}
+
 
 /// Computes the anisotropic signed distance function.
 ///

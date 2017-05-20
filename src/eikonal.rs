@@ -103,22 +103,31 @@ pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
 }
 
 pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_norm: F)
-    where F: FnMut(f64, [f64; 2], [f64; 2]) -> f64 {
+    where F: FnMut(f64, [f64; 2], [f64; 2]) -> f64
+{
     let (nx, ny) = dim;
     let (sx, sy) = (ny, 1);
     assert_eq!(nx * ny, d.len());
     // sweep in 4 directions
     for m in 0..4 {
         for p in 1..nx {
-            let (i, ip, isign) = if m & 0b001 == 0 { (nx - 1 - p, nx - 1 - p + 1, -1.) }
-                else { (p, p - 1, 1.) };
+            let (i, ip, isign) = if m & 0b001 == 0 {
+                (nx - 1 - p, nx - 1 - p + 1, -1.)
+            } else {
+                (p, p - 1, 1.)
+            };
             for q in 1..ny {
-                let (j, jp, jsign) = if m & 0b010 == 0 { (ny - 1 - q, ny - 1 - q + 1, -1.) }
-                    else { (q, q - 1, 1.) };
+                let (j, jp, jsign) = if m & 0b010 == 0 {
+                    (ny - 1 - q, ny - 1 - q + 1, -1.)
+                } else {
+                    (q, q - 1, 1.)
+                };
 
                 let s = i * sx + j * sy;
 
-                d[s] = inv_norm(d[s], [d[ip * sx + j * sy], d[i * sx + jp * sy]], [isign, jsign]);
+                d[s] = inv_norm(d[s],
+                                [d[ip * sx + j * sy], d[i * sx + jp * sy]],
+                                [isign, jsign]);
             }
         }
     }

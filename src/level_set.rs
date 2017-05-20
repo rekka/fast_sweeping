@@ -29,7 +29,10 @@ pub fn tetrahedron_dist(mut u: [f64; 4]) -> Option<[f64; 4]> {
         return Some([0.; 4]);
     }
 
-    let g_norm_rcp = 1. / u.windows(2).fold(0., |sum, x| sum + (x[1] - x[0]).powi(2)).sqrt();
+    let g_norm_rcp = 1. /
+                     u.windows(2)
+                         .fold(0., |sum, x| sum + (x[1] - x[0]).powi(2))
+                         .sqrt();
 
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;
@@ -172,8 +175,9 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     }
 }
 
-pub fn triangle_dist_general<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64; 3]>
-    where F: FnMut([f64; 2]) -> f64 {
+pub fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64; 3]>
+    where F: FnMut([f64; 2]) -> f64
+{
     let mut n_pos = 0;
     let mut n_neg = 0;
     for u in &mut u {
@@ -205,7 +209,8 @@ pub fn triangle_dist_general<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64; 3]
 }
 
 pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut norm: F)
-    where F: FnMut([f64; 2]) -> f64 {
+    where F: FnMut([f64; 2]) -> f64
+{
     let (nx, ny) = dim;
     assert_eq!(nx * ny, u.len());
     assert_eq!(nx * ny, d.len());
@@ -219,7 +224,7 @@ pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize)
             let s = j * ny + i;
             let vs = [[s - ny, s - ny - 1, s], [s - 1, s - ny - 1, s]];
             for v in &vs {
-                let r = triangle_dist_general([u[v[0]], u[v[1]], u[v[2]]], &mut norm);
+                let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], &mut norm);
                 if let Some(e) = r {
                     for i in 0..3 {
                         d[v[i]] = min(e[i], d[v[i]]);

@@ -12,8 +12,8 @@ use ndarray::Data;
 use ndarray::Zip;
 use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
-use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor,
-              ContourStyle, AutoOption};
+use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
+              TextColor, ContourStyle, AutoOption};
 use std::f64::NAN;
 
 const USAGE: &'static str = "
@@ -58,8 +58,9 @@ fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>, y: &ArrayBase<T, Ix1>
 }
 
 fn main() {
-    let args: Args =
-        docopt::Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
+    let args: Args = docopt::Docopt::new(USAGE)
+        .and_then(|d| d.decode())
+        .unwrap_or_else(|e| e.exit());
 
     let n = args.flag_n;
 
@@ -87,13 +88,15 @@ fn main() {
 
     let mut diff = u.clone();
 
-    Zip::from(&mut diff).and(&d).apply(|diff, &d| {
-        *diff = if diff.abs() > delta {
-            NAN
-        } else {
-            (*diff - d).abs()
-        }
-    });
+    Zip::from(&mut diff)
+        .and(&d)
+        .apply(|diff, &d| {
+                   *diff = if diff.abs() > delta {
+                       NAN
+                   } else {
+                       (*diff - d).abs()
+                   }
+               });
 
     let mut gdiff = u.slice(s![1..-1, 1..-1]).to_owned();
 

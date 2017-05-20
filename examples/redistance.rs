@@ -11,8 +11,8 @@ use ndarray::prelude::*;
 use ndarray::Data;
 use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
-use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate, TextColor,
-              ContourStyle, AutoOption};
+use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
+              TextColor, ContourStyle, AutoOption};
 
 const USAGE: &'static str = "
 Show effect of redistance.
@@ -57,8 +57,9 @@ fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>,
 }
 
 fn main() {
-    let args: Args =
-        docopt::Docopt::new(USAGE).and_then(|d| d.decode()).unwrap_or_else(|e| e.exit());
+    let args: Args = docopt::Docopt::new(USAGE)
+        .and_then(|d| d.decode())
+        .unwrap_or_else(|e| e.exit());
 
     let n = args.flag_n;
     let dim = (n + 1, n + 1);
@@ -123,8 +124,11 @@ fn main() {
                     .zip(&["blue", "red", "black"])
                     .zip(&[0, k, k + k1]) {
                 let mut q = 2;
-                 for line in verts.components() {
-                     axes.lines(line.iter().map(|p| p[0]), line.iter().map(|p| p[1]), &[PlotOption::Color(c), PlotOption::Caption(&format!("{}", i))][..q]);
+                for line in verts.components() {
+                    axes.lines(line.iter().map(|p| p[0]),
+                               line.iter().map(|p| p[1]),
+                               &[PlotOption::Color(c), PlotOption::Caption(&format!("{}", i))]
+                                    [..q]);
                     // add label only for the first line segment
                     if q > 1 {
                         q -= 1;

@@ -149,20 +149,27 @@ pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64)
 }
 
 /// Computes the anisotropic signed distance function.
+///
+/// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
+///
+/// `inv_dual_norm(d, [d_1, d_2], [s_1, s_2]) -> t` needs to solve the "inverse problem" for the
+/// norm: Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin
+/// such that `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic
+/// norm.
 pub fn anisotropic_signed_distance_2d<N, INV>(d: &mut [f64],
                                               u: &[f64],
                                               dim: (usize, usize),
                                               h: f64,
-                                              norm: N,
-                                              inv_norm: INV)
+                                              dual_norm: N,
+                                              inv_dual_norm: INV)
     where N: FnMut([f64; 2]) -> f64,
           INV: FnMut(f64, [f64; 2], [f64; 2]) -> f64
 {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
 
-    level_set::init_anisotropic_dist_2d(d, u, dim, norm);
-    eikonal::fast_sweep_anisotropic_dist_2d(d, dim, inv_norm);
+    level_set::init_anisotropic_dist_2d(d, u, dim, dual_norm);
+    eikonal::fast_sweep_anisotropic_dist_2d(d, dim, inv_dual_norm);
 
     // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {

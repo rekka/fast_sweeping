@@ -102,7 +102,12 @@ pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
     }
 }
 
-pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_norm: F)
+/// Fast sweeping method for a general anisotropic norm.
+///
+/// `inv_dual_norm(d, [d1, d2], [s1, s2]) -> t` needs to solve the "inverse problem" for the norm:
+/// Given values `d_i` at points `-s_1 e_1`, find the largest value `t ≤ d` at the origin such that
+/// `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic norm.
+pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_dual_norm: F)
     where F: FnMut(f64, [f64; 2], [f64; 2]) -> f64
 {
     let (nx, ny) = dim;
@@ -125,9 +130,9 @@ pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut
 
                 let s = i * sx + j * sy;
 
-                d[s] = inv_norm(d[s],
-                                [d[ip * sx + j * sy], d[i * sx + jp * sy]],
-                                [isign, jsign]);
+                d[s] = inv_dual_norm(d[s],
+                                     [d[ip * sx + j * sy], d[i * sx + jp * sy]],
+                                     [isign, jsign]);
             }
         }
     }

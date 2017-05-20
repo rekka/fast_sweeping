@@ -175,7 +175,7 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     }
 }
 
-pub fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64; 3]>
+fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut dual_norm: F) -> Option<[f64; 3]>
     where F: FnMut([f64; 2]) -> f64
 {
     let mut n_pos = 0;
@@ -199,7 +199,7 @@ pub fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64
 
     let gx = u[1] - u[0];
     let gy = u[2] - u[0];
-    let g_norm_rcp = 1. / norm([gx, gy]);
+    let g_norm_rcp = 1. / dual_norm([gx, gy]);
 
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;
@@ -208,7 +208,10 @@ pub fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut norm: F) -> Option<[f64
 
 }
 
-pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut norm: F)
+/// As `init_dist_2d`, but for general anisotropic norm.
+///
+/// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
+pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut dual_norm: F)
     where F: FnMut([f64; 2]) -> f64
 {
     let (nx, ny) = dim;
@@ -224,7 +227,7 @@ pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize)
             let s = j * ny + i;
             let vs = [[s - ny, s - ny - 1, s], [s - 1, s - ny - 1, s]];
             for v in &vs {
-                let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], &mut norm);
+                let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], &mut dual_norm);
                 if let Some(e) = r {
                     for i in 0..3 {
                         d[v[i]] = min(e[i], d[v[i]]);

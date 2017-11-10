@@ -48,7 +48,7 @@ pub fn tetrahedron_anisotropic_dist<F>(mut u: [f64; 4], mut dual_norm: F) -> Opt
 ///
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
-/// Splits every square into two triangles and computes the distance on each of them.
+/// Splits every cube into six tetrahedra and computes the distance on each of them.
 pub fn init_anisotropic_dist_3d<F>(d: &mut [f64],
                                    u: &[f64],
                                    dim: (usize, usize, usize),

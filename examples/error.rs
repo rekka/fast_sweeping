@@ -37,6 +37,7 @@ pub struct Args {
     flag_n: usize,
     flag_svg: Option<String>,
     flag_delta: f64,
+
 }
 
 fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>, y: &ArrayBase<T, Ix1>, f: F) -> Array2<C>
@@ -62,18 +63,45 @@ fn main() {
         .and_then(|d| d.decode())
         .unwrap_or_else(|e| e.exit());
 
-    let n = args.flag_n;
 
+    let n = args.flag_n;
     let h = 1. / n as f64;
-    let delta = args.flag_delta * h;
+
+    let (e, ge) = error(n, args.flag_delta);
+
+    let m = e.fold(0f64, |m, &x| m.max(x));
+    let gm = ge.fold(0f64, |m, &x| m.max(x));
+
+    println!("max error      = {:.4} * h²", m / h.powi(2));
+    println!("max grad error = {:.4} * h", gm / h);
+
+    let mut fg = Figure::new();
+    if let Some(f) = args.flag_svg {
+        fg.set_terminal("svg size 1280, 1280", &f);
+    }
+    fg.axes3d()
+        .set_title("Max gradient error", &[])
+        .set_view_map()
+        .set_aspect_ratio(AutoOption::Fix(1.))
+        .surface(ge.iter(),
+                 ge.dim().0,
+                 ge.dim().1,
+                 Some((-0.5, -0.5, 0.5, 0.5)),
+                 &[]);
+    fg.show();
+}
+
+fn error(n: usize, delta: f64) -> (Array2<f64>, Array2<f64>) {
+    let h = 1. / n as f64;
+    let delta = delta * h;
 
     let r = 0.3;
 
     let xs: Array1<f64> = Array::linspace(-0.5, 0.5, n + 1);
     let ys: Array1<f64> = Array::linspace(-0.5, 0.5, n + 1);
-    let u = tensor_product(&xs, &ys, |x, y| (x * x + y * y).sqrt() - r);
+    let u = tensor_product(&xs, &ys, |x, y| x.hypot(y) - r);
     let gu = tensor_product(&xs, &ys, |x, y| {
-        let norm = (x * x + y * y).sqrt();
+        let norm = x.hypot(y);
         if norm > 0. {
             (x / norm, y / norm)
         } else {
@@ -100,6 +128,7 @@ fn main() {
 
     let mut gdiff = u.slice(s![1..-1, 1..-1]).to_owned();
 
+    // gradient via the central difference
     Zip::from(&mut gdiff)
         .and(d.slice(s![..-2, 1..-1]))
         .and(d.slice(s![2.., 1..-1]))
@@ -113,30 +142,9 @@ fn main() {
             *gdiff = if gdiff.abs() > delta {
                 NAN
             } else {
-                (dx * dx + dy * dy).sqrt()
+                dx.hypot(dy)
             }
         });
 
-    let m = diff.fold(0f64, |m, &x| m.max(x));
-    let gm = gdiff.fold(0f64, |m, &x| m.max(x));
-
-    println!("max error = {} * h", m / h);
-    println!("max grad error = {}", gm);
-    println!("max grad error = {} * h", gm / h);
-
-    let mut fg = Figure::new();
-    if let Some(f) = args.flag_svg {
-        fg.set_terminal("svg size 1280, 1280", &f);
-    }
-
-    fg.axes3d()
-        .set_title("Max gradient error", &[])
-        .set_view_map()
-        .set_aspect_ratio(AutoOption::Fix(1.))
-        .surface(gdiff.iter(),
-                 gdiff.dim().0,
-                 gdiff.dim().1,
-                 Some((-0.5, -0.5, 0.5, 0.5)),
-                 &[]);
-    fg.show();
+    (diff, gdiff)
 }

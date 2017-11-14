@@ -68,8 +68,11 @@
 //! [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
 //! 603–627.
 
+extern crate isosurface;
+
 pub mod level_set;
 pub mod eikonal;
+pub mod dist;
 
 /// Implementation of min that compiles to the `minsd` instruction on intel.
 #[inline(always)]

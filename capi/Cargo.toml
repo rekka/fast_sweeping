@@ -1,0 +1,13 @@
+[package]
+authors = ["Norbert Pozar <bertapozar@gmail.com>"]
+license = "MIT"
+name = "fast_sweeping_capi"
+version = "0.0.1"
+
+[lib]
+name = "fast_sweeping_capi"
+crate-type = ["cdylib"]
+
+[dependencies]
+libc = "0.2"
+fast_sweeping = { path = ".." }

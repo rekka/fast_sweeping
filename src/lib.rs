@@ -77,13 +77,21 @@ pub mod dist;
 /// Implementation of min that compiles to the `minsd` instruction on intel.
 #[inline(always)]
 fn min(x: f64, y: f64) -> f64 {
-    if x > y { y } else { x }
+    if x > y {
+        y
+    } else {
+        x
+    }
 }
 
 /// Implementation of max that compiles to the `maxsd` instruction on intel.
 #[inline(always)]
 fn max(x: f64, y: f64) -> f64 {
-    if x < y { y } else { x }
+    if x < y {
+        y
+    } else {
+        x
+    }
 }
 
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
@@ -100,77 +108,83 @@ fn max(x: f64, y: f64) -> f64 {
 ///
 /// Returns `std::f64::MAX` if all `u` are positive and `-std::f64::MAX` if all `u` are negative.
 pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
-    anisotropic_signed_distance_3d(d,
-                                   u,
-                                   dim,
-                                   h,
-                                   |p| (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]).sqrt(),
-                                   |d, v, _| {
-        let (a, b, c) = {
-            use std::mem::swap;
-            let mut a = v[0];
-            let mut b = v[1];
-            let mut c = v[2];
+    anisotropic_signed_distance_3d(
+        d,
+        u,
+        dim,
+        h,
+        |p| (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]).sqrt(),
+        |d, v, _| {
+            let (a, b, c) = {
+                use std::mem::swap;
+                let mut a = v[0];
+                let mut b = v[1];
+                let mut c = v[2];
 
-            if a > b {
-                swap(&mut a, &mut b);
-            }
-            if b > c {
-                swap(&mut b, &mut c);
-            }
-            if a > b {
-                swap(&mut a, &mut b);
-            }
+                if a > b {
+                    swap(&mut a, &mut b);
+                }
+                if b > c {
+                    swap(&mut b, &mut c);
+                }
+                if a > b {
+                    swap(&mut a, &mut b);
+                }
 
-            (a, b, c)
-        };
+                (a, b, c)
+            };
 
-        let x = if b >= a + 1. {
-            a + 1.
-        } else {
-            let x = 0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt());
-            if x <= c {
-                x
+            let x = if b >= a + 1. {
+                a + 1.
             } else {
-                let v = (1. / 3.) *
-                        (a + b + c +
-                         (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
-                v
-            }
-        };
+                let x = 0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt());
+                if x <= c {
+                    x
+                } else {
+                    let v = (1. / 3.)
+                        * (a + b + c
+                            + (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
+                    v
+                }
+            };
 
-        min(d, x)
-    });
+            min(d, x)
+        },
+    );
 }
 
 pub fn max_signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
-    anisotropic_signed_distance_3d(d,
-                                   u,
-                                   dim,
-                                   h,
-                                   |p| p[0].abs() + p[1].abs() + p[2].abs(),
-                                   |d, v, _| {
-        let (a, b, c) = {
-            use std::mem::swap;
-            let mut a = v[0];
-            let mut b = v[1];
-            let mut c = v[2];
+    anisotropic_signed_distance_3d(
+        d,
+        u,
+        dim,
+        h,
+        |p| p[0].abs() + p[1].abs() + p[2].abs(),
+        |d, v, _| {
+            let (a, b, c) = {
+                use std::mem::swap;
+                let mut a = v[0];
+                let mut b = v[1];
+                let mut c = v[2];
 
-            if a > b {
-                swap(&mut a, &mut b);
-            }
-            if b > c {
-                swap(&mut b, &mut c);
-            }
-            if a > b {
-                swap(&mut a, &mut b);
-            }
+                if a > b {
+                    swap(&mut a, &mut b);
+                }
+                if b > c {
+                    swap(&mut b, &mut c);
+                }
+                if a > b {
+                    swap(&mut a, &mut b);
+                }
 
-            (a, b, c)
-        };
-        min(min(d, a + 1.),
-            min(0.5 * (a + b + 1.), (1. / 3.) * (a + b + c + 1.)))
-    });
+                (a, b, c)
+            };
+            min(
+                min(d, a + 1.),
+                min(0.5 * (a + b + 1.), (1. / 3.) * (a + b + c + 1.)),
+            )
+        },
+    );
 }
 
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
@@ -196,40 +210,49 @@ pub fn max_signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usiz
 ///
 /// Returns `std::f64::MAX` if all `u` are nonnegative (`-std::f64::MAX` if all `u` are negative).
 pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-    anisotropic_signed_distance_2d(d,
-                                   u,
-                                   dim,
-                                   h,
-                                   |p| (p[0] * p[0] + p[1] * p[1]).sqrt(),
-                                   |d, v, _| {
-        let a = v[0];
-        let b = v[1];
+    anisotropic_signed_distance_2d(
+        d,
+        u,
+        dim,
+        h,
+        |p| (p[0] * p[0] + p[1] * p[1]).sqrt(),
+        |d, v, _| {
+            let a = v[0];
+            let b = v[1];
 
-        let x = if (a - b).abs() >= 1. {
-            min(a, b) + 1.
-        } else {
-            0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt())
-        };
+            let x = if (a - b).abs() >= 1. {
+                min(a, b) + 1.
+            } else {
+                0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt())
+            };
 
-        min(d, x)
-    });
+            min(d, x)
+        },
+    );
 }
 
 /// Signed distance in the max norm.
 pub fn max_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-    anisotropic_signed_distance_2d(d, u, dim, h, |p| p[0].abs() + p[1].abs(), |d, v, _| {
-        min(min(d, v[0] + 1.), min(v[1] + 1., 0.5 * (v[0] + v[1] + 1.)))
-    });
+    anisotropic_signed_distance_2d(
+        d,
+        u,
+        dim,
+        h,
+        |p| p[0].abs() + p[1].abs(),
+        |d, v, _| min(min(d, v[0] + 1.), min(v[1] + 1., 0.5 * (v[0] + v[1] + 1.))),
+    );
 }
 
 /// Signed distance in the l¹ norm.
 pub fn l1_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-    anisotropic_signed_distance_2d(d,
-                                   u,
-                                   dim,
-                                   h,
-                                   |p| max(p[0].abs(), p[1].abs()),
-                                   |d, v, _| min(d, min(v[0], v[1]) + 1.));
+    anisotropic_signed_distance_2d(
+        d,
+        u,
+        dim,
+        h,
+        |p| max(p[0].abs(), p[1].abs()),
+        |d, v, _| min(d, min(v[0], v[1]) + 1.),
+    );
 }
 
 
@@ -241,14 +264,16 @@ pub fn l1_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f
 /// norm: Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin
 /// such that `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic
 /// norm.
-pub fn anisotropic_signed_distance_2d<N, INV>(d: &mut [f64],
-                                              u: &[f64],
-                                              dim: (usize, usize),
-                                              h: f64,
-                                              dual_norm: N,
-                                              inv_dual_norm: INV)
-    where N: FnMut([f64; 2]) -> f64,
-          INV: FnMut(f64, [f64; 2], [f64; 2]) -> f64
+pub fn anisotropic_signed_distance_2d<N, INV>(
+    d: &mut [f64],
+    u: &[f64],
+    dim: (usize, usize),
+    h: f64,
+    dual_norm: N,
+    inv_dual_norm: INV,
+) where
+    N: FnMut([f64; 2]) -> f64,
+    INV: FnMut(f64, [f64; 2], [f64; 2]) -> f64,
 {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
@@ -266,14 +291,16 @@ pub fn anisotropic_signed_distance_2d<N, INV>(d: &mut [f64],
     }
 }
 
-pub fn anisotropic_signed_distance_3d<N, INV>(d: &mut [f64],
-                                              u: &[f64],
-                                              dim: (usize, usize, usize),
-                                              h: f64,
-                                              dual_norm: N,
-                                              inv_dual_norm: INV)
-    where N: FnMut([f64; 3]) -> f64,
-          INV: FnMut(f64, [f64; 3], [f64; 3]) -> f64
+pub fn anisotropic_signed_distance_3d<N, INV>(
+    d: &mut [f64],
+    u: &[f64],
+    dim: (usize, usize, usize),
+    h: f64,
+    dual_norm: N,
+    inv_dual_norm: INV,
+) where
+    N: FnMut([f64; 3]) -> f64,
+    INV: FnMut(f64, [f64; 3], [f64; 3]) -> f64,
 {
     assert_eq!(dim.0 * dim.1 * dim.2, u.len());
     assert_eq!(dim.0 * dim.1 * dim.2, d.len());
@@ -332,8 +359,8 @@ pub mod legacy {
 #[cfg(test)]
 mod test {
     use super::*;
-    extern crate quickcheck;
     extern crate ndarray;
+    extern crate quickcheck;
     use self::quickcheck::quickcheck;
     use self::ndarray::prelude::*;
     use self::ndarray::Si;
@@ -367,12 +394,14 @@ mod test {
     #[test]
     fn it_works_for_x_axis_line() {
         fn prop(y: f64) -> bool {
-            check_line(0.,
-                       1.,
-                       -((y - y.floor()) * 0.9 + 0.05),
-                       (9, 17),
-                       0.00001,
-                       false)
+            check_line(
+                0.,
+                1.,
+                -((y - y.floor()) * 0.9 + 0.05),
+                (9, 17),
+                0.00001,
+                false,
+            )
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -380,25 +409,36 @@ mod test {
     #[test]
     fn it_works_for_y_axis_line() {
         fn prop(x: f64) -> bool {
-            check_line(1.,
-                       0.,
-                       -((x - x.floor()) * 0.9 + 0.05),
-                       (16, 9),
-                       0.00001,
-                       false)
+            check_line(
+                1.,
+                0.,
+                -((x - x.floor()) * 0.9 + 0.05),
+                (16, 9),
+                0.00001,
+                false,
+            )
         }
         quickcheck(prop as fn(f64) -> bool);
     }
 
     #[test]
     fn it_works_for_diagonal() {
-        assert!(check_line((0.5f64).sqrt(),
-                           (0.5f64).sqrt(),
-                           -(0.5f64).sqrt(),
-                           (9, 9),
-                           1e-6,
-                           false));
-        assert!(check_line(-(0.5f64).sqrt(), (0.5f64).sqrt(), 0., (9, 9), 1e-6, false));
+        assert!(check_line(
+            (0.5f64).sqrt(),
+            (0.5f64).sqrt(),
+            -(0.5f64).sqrt(),
+            (9, 9),
+            1e-6,
+            false
+        ));
+        assert!(check_line(
+            -(0.5f64).sqrt(),
+            (0.5f64).sqrt(),
+            0.,
+            (9, 9),
+            1e-6,
+            false
+        ));
     }
 
     #[test]
@@ -413,8 +453,9 @@ mod test {
             let ys = Array::linspace(0., 1., n);
             let u_array = {
                 let mut u_array = xs.broadcast((n, n)).unwrap().to_owned();
-                u_array.zip_mut_with(&ys.broadcast((n, n)).unwrap().t(),
-                                     |x, y| *x = *x * gx + *y * gy + c);
+                u_array.zip_mut_with(&ys.broadcast((n, n)).unwrap().t(), |x, y| {
+                    *x = *x * gx + *y * gy + c
+                });
                 u_array
             };
             let u = u_array.as_slice().unwrap();
@@ -436,14 +477,15 @@ mod test {
         quickcheck(prop as fn(f64) -> bool);
     }
 
-    fn check_plane(gx: f64,
-                   gy: f64,
-                   gz: f64,
-                   c: f64,
-                   dim: (usize, usize, usize),
-                   tol: f64,
-                   print: bool)
-                   -> bool {
+    fn check_plane(
+        gx: f64,
+        gy: f64,
+        gz: f64,
+        c: f64,
+        dim: (usize, usize, usize),
+        tol: f64,
+        print: bool,
+    ) -> bool {
         let (nx, ny, nz) = dim;
         let xs = Array::linspace(0., 1., nx);
         let ys = Array::linspace(0., (ny - 1) as f64 / (nx - 1) as f64, ny);
@@ -473,13 +515,15 @@ mod test {
     #[test]
     fn it_works_for_x_axis_plane() {
         fn prop(x: f64) -> bool {
-            check_plane(1.,
-                        0.,
-                        0.,
-                        -((x - x.floor()) * 0.9 + 0.05),
-                        (9, 14, 18),
-                        1e-6,
-                        false)
+            check_plane(
+                1.,
+                0.,
+                0.,
+                -((x - x.floor()) * 0.9 + 0.05),
+                (9, 14, 18),
+                1e-6,
+                false,
+            )
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -487,13 +531,15 @@ mod test {
     #[test]
     fn it_works_for_y_axis_plane() {
         fn prop(x: f64) -> bool {
-            check_plane(0.,
-                        1.,
-                        0.,
-                        -((x - x.floor()) * 0.9 + 0.05),
-                        (9, 14, 18),
-                        1e-6,
-                        false)
+            check_plane(
+                0.,
+                1.,
+                0.,
+                -((x - x.floor()) * 0.9 + 0.05),
+                (9, 14, 18),
+                1e-6,
+                false,
+            )
         }
         quickcheck(prop as fn(f64) -> bool);
     }
@@ -501,13 +547,15 @@ mod test {
     #[test]
     fn it_works_for_z_axis_plane() {
         fn prop(x: f64) -> bool {
-            check_plane(0.,
-                        0.,
-                        1.,
-                        -((x - x.floor()) * 0.9 + 0.05),
-                        (9, 14, 18),
-                        1e-6,
-                        false)
+            check_plane(
+                0.,
+                0.,
+                1.,
+                -((x - x.floor()) * 0.9 + 0.05),
+                (9, 14, 18),
+                1e-6,
+                false,
+            )
         }
         quickcheck(prop as fn(f64) -> bool);
     }

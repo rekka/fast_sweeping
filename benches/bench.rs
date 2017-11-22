@@ -1,6 +1,6 @@
 #![feature(test)]
-extern crate test;
 extern crate fast_sweeping;
+extern crate test;
 
 mod bench_2d {
     use test::{black_box, Bencher};
@@ -24,7 +24,9 @@ mod bench_2d {
             }
         }
 
-        b.iter(|| { signed_distance_2d(&mut d, &u, dim, hx); });
+        b.iter(|| {
+            signed_distance_2d(&mut d, &u, dim, hx);
+        });
     }
 
     fn bench_init_2d(b: &mut Bencher, dim: (usize, usize)) {
@@ -44,7 +46,9 @@ mod bench_2d {
             }
         }
 
-        b.iter(|| { level_set::init_dist_2d(&mut d, &u, dim); });
+        b.iter(|| {
+            level_set::init_dist_2d(&mut d, &u, dim);
+        });
     }
 
     #[bench]
@@ -100,7 +104,9 @@ mod bench_3d {
             }
         }
 
-        b.iter(|| { level_set::init_dist_3d(&mut d, &u, dim); });
+        b.iter(|| {
+            level_set::init_dist_3d(&mut d, &u, dim);
+        });
     }
 
     fn bench_3d(b: &mut Bencher, dim: (usize, usize, usize)) {
@@ -122,7 +128,9 @@ mod bench_3d {
             }
         }
 
-        b.iter(|| { signed_distance_3d(&mut d, &u, dim, h); });
+        b.iter(|| {
+            signed_distance_3d(&mut d, &u, dim, h);
+        });
     }
 
     #[bench]

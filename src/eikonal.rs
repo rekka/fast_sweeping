@@ -12,12 +12,13 @@ macro_rules! min_of {
     }
 }
 
-pub fn fast_sweep_anisotropic_dist_3d<F>(d: &mut [f64],
-                                         dim: (usize, usize, usize),
-                                         mut inv_dual_norm: F)
-    where F: FnMut(f64, [f64; 3], [f64; 3]) -> f64
+pub fn fast_sweep_anisotropic_dist_3d<F>(
+    d: &mut [f64],
+    dim: (usize, usize, usize),
+    mut inv_dual_norm: F,
+) where
+    F: FnMut(f64, [f64; 3], [f64; 3]) -> f64,
 {
-
     let (nx, ny, nz) = dim;
     assert_eq!(nx * ny * nz, d.len());
     let (sx, sy, sz) = (ny * nz, nz, 1);
@@ -42,11 +43,15 @@ pub fn fast_sweep_anisotropic_dist_3d<F>(d: &mut [f64],
                         let kp = k + 1;
                         let s = i * sx + j * sy + k * sz;
 
-                        d[s] = inv_dual_norm(d[s],
-                                             [d[ip * sx + j * sy + k * sz],
-                                              d[i * sx + jp * sy + k * sz],
-                                              d[i * sx + j * sy + kp * sz]],
-                                             [isign, jsign, ksign]);
+                        d[s] = inv_dual_norm(
+                            d[s],
+                            [
+                                d[ip * sx + j * sy + k * sz],
+                                d[i * sx + jp * sy + k * sz],
+                                d[i * sx + j * sy + kp * sz],
+                            ],
+                            [isign, jsign, ksign],
+                        );
                     }
                 } else {
                     let ksign = 1.;
@@ -54,17 +59,20 @@ pub fn fast_sweep_anisotropic_dist_3d<F>(d: &mut [f64],
                         let kp = k - 1;
                         let s = i * sx + j * sy + k * sz;
 
-                        d[s] = inv_dual_norm(d[s],
-                                             [d[ip * sx + j * sy + k * sz],
-                                              d[i * sx + jp * sy + k * sz],
-                                              d[i * sx + j * sy + kp * sz]],
-                                             [isign, jsign, ksign]);
+                        d[s] = inv_dual_norm(
+                            d[s],
+                            [
+                                d[ip * sx + j * sy + k * sz],
+                                d[i * sx + jp * sy + k * sz],
+                                d[i * sx + j * sy + kp * sz],
+                            ],
+                            [isign, jsign, ksign],
+                        );
                     }
                 }
             }
         }
     }
-
 }
 /// Computes the solution of the eikonal equation in 2D using the Fast sweeping algorithm.
 ///
@@ -111,10 +119,10 @@ pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
                         if x <= c {
                             x
                         } else {
-                            let v = (1. / 3.) *
-                                    (a + b + c +
-                                     (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c))
-                                         .sqrt());
+                            let v = (1. / 3.)
+                                * (a + b + c
+                                    + (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c))
+                                        .sqrt());
                             v
                         }
                     };
@@ -162,7 +170,8 @@ pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
 /// Given values `d_i` at points `-s_1 e_1`, find the largest value `t ≤ d` at the origin such that
 /// `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic norm.
 pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_dual_norm: F)
-    where F: FnMut(f64, [f64; 2], [f64; 2]) -> f64
+where
+    F: FnMut(f64, [f64; 2], [f64; 2]) -> f64,
 {
     let (nx, ny) = dim;
     let (sx, sy) = (ny, 1);
@@ -184,9 +193,11 @@ pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut
 
                 let s = i * sx + j * sy;
 
-                d[s] = inv_dual_norm(d[s],
-                                     [d[ip * sx + j * sy], d[i * sx + jp * sy]],
-                                     [isign, jsign]);
+                d[s] = inv_dual_norm(
+                    d[s],
+                    [d[ip * sx + j * sy], d[i * sx + jp * sy]],
+                    [isign, jsign],
+                );
             }
         }
     }

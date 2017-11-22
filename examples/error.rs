@@ -1,10 +1,10 @@
 //! Visualizes the error of fast sweeping.
+extern crate docopt;
 extern crate fast_sweeping;
-#[macro_use(s)]
-extern crate ndarray;
 extern crate gnuplot;
 extern crate isosurface;
-extern crate docopt;
+#[macro_use(s)]
+extern crate ndarray;
 extern crate rustc_serialize;
 
 use ndarray::prelude::*;
@@ -12,8 +12,8 @@ use ndarray::Data;
 use ndarray::Zip;
 use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
-use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
-              TextColor, ContourStyle, AutoOption};
+use gnuplot::{AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure,
+              Fix, PlotOption, TextColor};
 use std::f64::NAN;
 
 const USAGE: &'static str = "
@@ -37,15 +37,15 @@ pub struct Args {
     flag_n: usize,
     flag_svg: Option<String>,
     flag_delta: f64,
-
 }
 
 fn tensor_product<A, B, C, S, T, F>(x: &ArrayBase<S, Ix1>, y: &ArrayBase<T, Ix1>, f: F) -> Array2<C>
-    where S: Data<Elem = A>,
-          T: Data<Elem = B>,
-          A: Copy,
-          B: Copy,
-          F: Fn(A, B) -> C
+where
+    S: Data<Elem = A>,
+    T: Data<Elem = B>,
+    A: Copy,
+    B: Copy,
+    F: Fn(A, B) -> C,
 {
     let dim = (x.len(), y.len());
     let mut r = Vec::with_capacity(dim.0 * dim.1);
@@ -83,11 +83,13 @@ fn main() {
         .set_title("Max gradient error", &[])
         .set_view_map()
         .set_aspect_ratio(AutoOption::Fix(1.))
-        .surface(ge.iter(),
-                 ge.dim().0,
-                 ge.dim().1,
-                 Some((-0.5, -0.5, 0.5, 0.5)),
-                 &[]);
+        .surface(
+            ge.iter(),
+            ge.dim().0,
+            ge.dim().1,
+            Some((-0.5, -0.5, 0.5, 0.5)),
+            &[],
+        );
     fg.show();
 }
 
@@ -116,15 +118,13 @@ fn error(n: usize, delta: f64) -> (Array2<f64>, Array2<f64>) {
 
     let mut diff = u.clone();
 
-    Zip::from(&mut diff)
-        .and(&d)
-        .apply(|diff, &d| {
-                   *diff = if diff.abs() > delta {
-                       NAN
-                   } else {
-                       (*diff - d).abs()
-                   }
-               });
+    Zip::from(&mut diff).and(&d).apply(|diff, &d| {
+        *diff = if diff.abs() > delta {
+            NAN
+        } else {
+            (*diff - d).abs()
+        }
+    });
 
     let mut gdiff = u.slice(s![1..-1, 1..-1]).to_owned();
 

@@ -10,7 +10,8 @@ use super::min;
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
 pub fn tetrahedron_anisotropic_dist<F>(mut u: [f64; 4], mut dual_norm: F) -> Option<[f64; 4]>
-    where F: FnMut([f64; 3]) -> f64
+where
+    F: FnMut([f64; 3]) -> f64,
 {
     let mut n_pos = 0;
     let mut n_neg = 0;
@@ -49,11 +50,13 @@ pub fn tetrahedron_anisotropic_dist<F>(mut u: [f64; 4], mut dual_norm: F) -> Opt
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
 /// Splits every cube into six tetrahedra and computes the distance on each of them.
-pub fn init_anisotropic_dist_3d<F>(d: &mut [f64],
-                                   u: &[f64],
-                                   dim: (usize, usize, usize),
-                                   mut dual_norm: F)
-    where F: FnMut([f64; 3]) -> f64
+pub fn init_anisotropic_dist_3d<F>(
+    d: &mut [f64],
+    u: &[f64],
+    dim: (usize, usize, usize),
+    mut dual_norm: F,
+) where
+    F: FnMut([f64; 3]) -> f64,
 {
     let (nx, ny, nz) = dim;
     assert_eq!(nx * ny * nz, u.len());
@@ -64,12 +67,14 @@ pub fn init_anisotropic_dist_3d<F>(d: &mut [f64],
     }
 
     // split each cube into 6 tetrahedrons
-    let ids = [[(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
-               [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
-               [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
-               [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
-               [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
-               [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)]];
+    let ids = [
+        [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
+        [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
+        [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
+        [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
+        [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
+        [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)],
+    ];
 
     for i in 1..nx {
         for j in 1..ny {
@@ -123,10 +128,10 @@ pub fn tetrahedron_dist(mut u: [f64; 4]) -> Option<[f64; 4]> {
         return Some([0.; 4]);
     }
 
-    let g_norm_rcp = 1. /
-                     u.windows(2)
-                         .fold(0., |sum, x| sum + (x[1] - x[0]).powi(2))
-                         .sqrt();
+    let g_norm_rcp = 1.
+        / u.windows(2)
+            .fold(0., |sum, x| sum + (x[1] - x[0]).powi(2))
+            .sqrt();
 
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;
@@ -153,12 +158,14 @@ pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
     }
 
     // split each cube into 6 tetrahedrons
-    let ids = [[(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
-               [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
-               [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
-               [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
-               [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
-               [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)]];
+    let ids = [
+        [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
+        [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
+        [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
+        [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
+        [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
+        [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)],
+    ];
 
     for i in 1..nx {
         for j in 1..ny {
@@ -224,7 +231,6 @@ pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
         *u = u.abs() * g_norm_rcp;
     }
     Some(u)
-
 }
 
 /// Initializes the distance around the free boundary.
@@ -271,7 +277,8 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
 }
 
 fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut dual_norm: F) -> Option<[f64; 3]>
-    where F: FnMut([f64; 2]) -> f64
+where
+    F: FnMut([f64; 2]) -> f64,
 {
     let mut n_pos = 0;
     let mut n_neg = 0;
@@ -300,14 +307,14 @@ fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut dual_norm: F) -> Option<[f6
         *u = u.abs() * g_norm_rcp;
     }
     Some(u)
-
 }
 
 /// As `init_dist_2d`, but for general anisotropic norm.
 ///
 /// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
 pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut dual_norm: F)
-    where F: FnMut([f64; 2]) -> f64
+where
+    F: FnMut([f64; 2]) -> f64,
 {
     let (nx, ny) = dim;
     assert_eq!(nx * ny, u.len());
@@ -343,12 +350,18 @@ mod test {
         assert_eq!(triangle_dist([1., 1., 1.]), None);
         assert_eq!(triangle_dist([-1., -1., -1.]), None);
         assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
-        assert_eq!(triangle_dist([0., -1., -1.]),
-                   Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()]));
-        assert_eq!(triangle_dist([0., 1., 1.]),
-                   Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()]));
+        assert_eq!(
+            triangle_dist([0., -1., -1.]),
+            Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()])
+        );
+        assert_eq!(
+            triangle_dist([0., 1., 1.]),
+            Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()])
+        );
         assert_eq!(triangle_dist([1., 1., 0.]), Some([1., 1., 0.]));
-        assert_eq!(triangle_dist([-1., 0., 0.]),
-                   Some([1. / (2f64).sqrt(), 0., 0.]));
+        assert_eq!(
+            triangle_dist([-1., 0., 0.]),
+            Some([1. / (2f64).sqrt(), 0., 0.])
+        );
     }
 }

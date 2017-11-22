@@ -2,8 +2,8 @@ extern crate fast_sweeping;
 extern crate gnuplot;
 
 #[allow(unused_imports)]
-use gnuplot::{Figure, Caption, Color, Fix, AxesCommon, PlotOption, DashType, Coordinate,
-              TextColor, AutoOption, ContourStyle};
+use gnuplot::{AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure,
+              Fix, PlotOption, TextColor};
 use fast_sweeping::signed_distance_2d;
 use fast_sweeping::max_signed_distance_2d;
 use fast_sweeping::l1_signed_distance_2d;

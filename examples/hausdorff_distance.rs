@@ -31,7 +31,9 @@ fn main() {
     let d_l2 = l2_hausdorff_dist_2d(&u, &v, (n + 1, n + 1), 1. / n as f64);
 
     println!("Hausdorff distance = {}, expected = {}", d, 0.1);
-    println!("L²-Hausdorff distance = {}, expected = {}", d_l2,
-             (2. * std::f64::consts::PI * (2. * r - delta)).sqrt() * delta);
-
+    println!(
+        "L²-Hausdorff distance = {}, expected = {}",
+        d_l2,
+        (2. * std::f64::consts::PI * (2. * r - delta)).sqrt() * delta
+    );
 }

@@ -38,3 +38,21 @@ macro_rules! ffi_fn {
         ffi_fn!(fn $name($($arg: $arg_ty),*) -> () $body);
     };
 }
+
+macro_rules! dist_ffi_fn {
+    (fn $name:ident($ni:ident, $($nj:ident),*) -> $ret:ty) => {
+        ffi_fn! {
+            fn $name(u: *const $ret, v: *const $ret,
+                     $ni: size_t, $($nj: size_t,)* h: $ret) -> $ret {
+                let $ni = $ni as usize;
+                $(let $nj = $nj as usize;)*
+                let len = $ni $(* $nj)*;
+
+                let u = unsafe { slice::from_raw_parts(u, len) };
+                let v = unsafe { slice::from_raw_parts(v, len) };
+
+                fast_sweeping::dist::$name(u, v, ($ni, $($nj, )*), h)
+            }
+        }
+    }
+}

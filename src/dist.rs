@@ -4,7 +4,6 @@ use isosurface::marching_triangles_with_data_emit;
 /// Computes the Hausdorff distance function between two level sets of discrete functions given on
 /// the same square grid.
 pub fn hausdorff_dist_2d(u: &[f64], v: &[f64], dim: (usize, usize), h: f64) -> f64 {
-    assert_eq!(dim.0, dim.1);
     assert_eq!(u.len(), dim.0 * dim.1);
     assert_eq!(v.len(), dim.0 * dim.1);
 
@@ -34,7 +33,6 @@ fn line_integral_sq(u: f64, v: f64) -> f64 {
 /// Computes a L² version of the Hausdorff distance by integrating the square
 /// of the distance functions over the level set.
 pub fn l2_hausdorff_dist_2d(u: &[f64], v: &[f64], dim: (usize, usize), h: f64) -> f64 {
-    assert_eq!(dim.0, dim.1);
     assert_eq!(u.len(), dim.0 * dim.1);
     assert_eq!(v.len(), dim.0 * dim.1);
 

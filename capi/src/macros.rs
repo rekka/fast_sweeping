@@ -39,7 +39,25 @@ macro_rules! ffi_fn {
     };
 }
 
-macro_rules! dist_ffi_fn {
+macro_rules! sign_dist_ffi_fn {
+    (fn $name:ident($ni:ident, $($nj:ident),*) -> $ret:ty) => {
+        ffi_fn! {
+            fn $name(d: *mut $ret, u: *const $ret,
+                     $ni: size_t, $($nj: size_t,)* h: $ret) {
+                let $ni = $ni as usize;
+                $(let $nj = $nj as usize;)*
+                let len = $ni $(* $nj)*;
+
+                let d = unsafe { slice::from_raw_parts_mut(d, len) };
+                let u = unsafe { slice::from_raw_parts(u, len) };
+
+                fast_sweeping::$name(d, u, ($ni, $($nj, )*), h);
+            }
+        }
+    }
+}
+
+macro_rules! haus_dist_ffi_fn {
     (fn $name:ident($ni:ident, $($nj:ident),*) -> $ret:ty) => {
         ffi_fn! {
             fn $name(u: *const $ret, v: *const $ret,

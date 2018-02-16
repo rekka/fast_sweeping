@@ -63,7 +63,6 @@ fn main() {
         .and_then(|d| d.decode())
         .unwrap_or_else(|e| e.exit());
 
-
     let n = args.flag_n;
     let h = 1. / n as f64;
 

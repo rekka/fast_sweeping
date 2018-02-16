@@ -120,7 +120,6 @@ fn main() {
                 axes.lines(&[x, n], &[0, n - x], &grid_opt);
             }
 
-
             for ((verts, c), i) in [init_verts, verts, ex_verts]
                 .iter()
                 .zip(&["blue", "red", "black"])

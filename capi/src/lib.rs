@@ -7,7 +7,6 @@ use std::slice;
 #[macro_use]
 mod macros;
 
-
 sign_dist_ffi_fn! {
     fn signed_distance_2d(ni, nj) -> f64
 }

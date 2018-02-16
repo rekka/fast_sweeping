@@ -17,7 +17,6 @@ pub fn hausdorff_dist_2d(u: &[f64], v: &[f64], dim: (usize, usize), h: f64) -> f
         m = m.max(d[0].abs()).max(d[1].abs());
     });
 
-
     signed_distance_2d(&mut dist, u, dim, h);
     marching_triangles_with_data_emit(v, &dist, dim, 0., |_, d| {
         m = m.max(d[0].abs()).max(d[1].abs());
@@ -40,7 +39,6 @@ pub fn hausdorff_dist_3d(u: &[f64], v: &[f64], dim: (usize, usize, usize), h: f6
     marching_tetrahedra_with_data_emit(u, &dist, dim, 0., |_, d| {
         m = m.max(d[0].abs()).max(d[1].abs()).max(d[2].abs());
     });
-
 
     signed_distance_3d(&mut dist, u, dim, h);
     marching_tetrahedra_with_data_emit(v, &dist, dim, 0., |_, d| {
@@ -71,7 +69,6 @@ pub fn l2_hausdorff_dist_2d(u: &[f64], v: &[f64], dim: (usize, usize), h: f64) -
         let a = h * (c[0][0] - c[1][0]).hypot(c[0][1] - c[1][1]);
         i += a * line_integral_sq(d[0], d[1]);
     });
-
 
     signed_distance_2d(&mut dist, u, dim, h);
     marching_triangles_with_data_emit(v, &dist, dim, 0., |c, d| {
@@ -119,7 +116,6 @@ pub fn l2_hausdorff_dist_3d(u: &[f64], v: &[f64], dim: (usize, usize, usize), h:
         let a = triangle_area(c);
         i += a * triangle_integral_sq(d[0], d[1], d[2]);
     });
-
 
     signed_distance_3d(&mut dist, u, dim, h);
     marching_tetrahedra_with_data_emit(v, &dist, dim, 0., |c, d| {

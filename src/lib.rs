@@ -255,7 +255,6 @@ pub fn l1_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f
     );
 }
 
-
 /// Computes the anisotropic signed distance function.
 ///
 /// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
@@ -354,7 +353,6 @@ pub mod legacy {
         }
     }
 }
-
 
 #[cfg(test)]
 mod test {

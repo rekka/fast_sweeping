@@ -32,14 +32,19 @@ fn main() {
     // signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
     // max_signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
     // l1_signed_distance_2d(&mut d, &u, (n + 1, n + 1), h);
-    fast_sweeping::anisotropic_signed_distance_2d(&mut d, &u, (n + 1, n + 1), h,
+    fast_sweeping::anisotropic_signed_distance_2d(
+        &mut d,
+        &u,
+        (n + 1, n + 1),
+        h,
         |p| p[0].abs().max(2. * p[1].abs()),
-        |d, v, _| d.min(if v[1] <= v[0] + 0.5 {
-            v[1] + 0.5
-        } else {
-            v[0] + 1.
-        }
-        )
+        |d, v, _| {
+            d.min(if v[1] <= v[0] + 0.5 {
+                v[1] + 0.5
+            } else {
+                v[0] + 1.
+            })
+        },
     );
 
     u.clone_from(&d);

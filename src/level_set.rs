@@ -9,7 +9,11 @@ use super::min;
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
-pub fn tetrahedron_anisotropic_dist<F>(mut u: [f64; 4], mut dual_norm: F) -> Option<[f64; 4]>
+pub fn tetrahedron_anisotropic_dist<F>(
+    mut u: [f64; 4],
+    mut dual_norm: F,
+    perm: [usize; 3],
+) -> Option<[f64; 4]>
 where
     F: FnMut([f64; 3]) -> f64,
 {
@@ -32,9 +36,12 @@ where
         return Some([0.; 4]);
     }
 
-    // FIXME: this must account for actual the permutation of the axes!
-    let g_norm_rcp = 1. / dual_norm([u[1] - u[0], u[2] - u[1], u[3] - u[2]]);
+    let g = [u[1] - u[0], u[2] - u[1], u[3] - u[2]];
+    let g = [g[perm[0]], g[perm[1]], g[perm[2]]];
+    let g_norm_rcp = 1. / dual_norm(g);
 
+    // FIXME: this requires for norm to be even
+    // Support triangular anisotropies?
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;
     }
@@ -76,18 +83,27 @@ pub fn init_anisotropic_dist_3d<F>(
         [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)],
     ];
 
+    let perms = [
+        [0, 1, 2],
+        [0, 2, 1],
+        [1, 0, 2],
+        [2, 0, 1],
+        [1, 2, 0],
+        [2, 1, 0],
+    ];
+
     for i in 1..nx {
         for j in 1..ny {
             for k in 1..nz {
                 let s = i * ny * nz + j * nz + k;
                 let mut v = [0.; 4];
 
-                for idx in ids.iter() {
+                for (idx, perm) in ids.iter().zip(perms.iter()) {
                     for m in 0..4 {
                         v[m] = u[s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2];
                     }
 
-                    let r = tetrahedron_anisotropic_dist(v, &mut dual_norm);
+                    let r = tetrahedron_anisotropic_dist(v, &mut dual_norm, *perm);
                     if let Some(r) = r {
                         for m in 0..4 {
                             let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
@@ -276,7 +292,11 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     }
 }
 
-fn triangle_anisotropic_dist<F>(mut u: [f64; 3], perm: [usize; 2], mut dual_norm: F) -> Option<[f64; 3]>
+fn triangle_anisotropic_dist<F>(
+    mut u: [f64; 3],
+    perm: [usize; 2],
+    mut dual_norm: F,
+) -> Option<[f64; 3]>
 where
     F: FnMut([f64; 2]) -> f64,
 {
@@ -372,20 +392,48 @@ mod test {
 
     #[test]
     fn anisotropic_norm_2d() {
+        // Du = (1, 0)
         let u = [0., 0., 1., 1.];
         let mut d = [0.; 4];
-        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| {
-            p[0].abs().max(2. * p[1].abs())
-        });
+        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| p[0].abs().max(2. * p[1].abs()));
 
         assert_eq!(d, [0., 0., 1., 1.]);
 
+        // Du = (0, 1)
         let u = [0., 1., 0., 1.];
         let mut d = [0.; 4];
-        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| {
-            p[0].abs().max(2. * p[1].abs())
-        });
+        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| p[0].abs().max(2. * p[1].abs()));
 
         assert_eq!(d, [0., 0.5, 0., 0.5]);
+    }
+
+    #[test]
+    fn anisotropic_norm_3d() {
+        // Du = (1, 0, 0)
+        let u = [0., 0., 0., 0., 1., 1., 1., 1.];
+        let mut d = [0.; 8];
+        init_anisotropic_dist_3d(&mut d, &u, (2, 2, 2), |p| {
+            p[0].abs().max(2. * p[1].abs()).max(4. * p[2].abs())
+        });
+
+        assert_eq!(d, [0., 0., 0., 0., 1., 1., 1., 1.]);
+
+        // Du = (0, 1, 0)
+        let u = [0., 0., 1., 1., 0., 0., 1., 1.];
+        let mut d = [0.; 8];
+        init_anisotropic_dist_3d(&mut d, &u, (2, 2, 2), |p| {
+            p[0].abs().max(2. * p[1].abs()).max(4. * p[2].abs())
+        });
+
+        assert_eq!(d, [0., 0., 0.5, 0.5, 0., 0., 0.5, 0.5]);
+
+        // Du = (0, 0, 1)
+        let u = [0., 1., 0., 1., 0., 1., 0., 1.];
+        let mut d = [0.; 8];
+        init_anisotropic_dist_3d(&mut d, &u, (2, 2, 2), |p| {
+            p[0].abs().max(2. * p[1].abs()).max(4. * p[2].abs())
+        });
+
+        assert_eq!(d, [0., 0.25, 0., 0.25, 0., 0.25, 0., 0.25]);
     }
 }

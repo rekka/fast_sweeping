@@ -74,7 +74,8 @@ pub fn fast_sweep_anisotropic_dist_3d<F>(
         }
     }
 }
-/// Computes the solution of the eikonal equation in 2D using the Fast sweeping algorithm.
+
+/// Computes the solution of the eikonal equation in 3D using the Fast sweeping algorithm.
 ///
 /// `d` should be initialized to a large value at the unknown nodes.
 pub fn fast_sweep_dist_3d(d: &mut [f64], dim: (usize, usize, usize)) {
@@ -167,7 +168,7 @@ pub fn fast_sweep_dist_2d(d: &mut [f64], dim: (usize, usize)) {
 /// Fast sweeping method for a general anisotropic norm.
 ///
 /// `inv_dual_norm(d, [d1, d2], [s1, s2]) -> t` needs to solve the "inverse problem" for the norm:
-/// Given values `d_i` at points `-s_1 e_1`, find the largest value `t ≤ d` at the origin such that
+/// Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin such that
 /// `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic norm.
 pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_dual_norm: F)
 where

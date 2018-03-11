@@ -276,7 +276,7 @@ pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
     }
 }
 
-fn triangle_anisotropic_dist<F>(mut u: [f64; 3], mut dual_norm: F) -> Option<[f64; 3]>
+fn triangle_anisotropic_dist<F>(mut u: [f64; 3], perm: [usize; 2], mut dual_norm: F) -> Option<[f64; 3]>
 where
     F: FnMut([f64; 2]) -> f64,
 {
@@ -299,9 +299,9 @@ where
         return Some([0., 0., 0.]);
     }
 
-    let gx = u[1] - u[0];
-    let gy = u[2] - u[0];
-    let g_norm_rcp = 1. / dual_norm([gx, gy]);
+    let g = [u[1] - u[0], u[2] - u[1]];
+    let g = [g[perm[0]], g[perm[1]]];
+    let g_norm_rcp = 1. / dual_norm(g);
 
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;
@@ -327,13 +327,18 @@ where
     for j in 1..nx {
         for i in 1..ny {
             let s = j * ny + i;
-            let vs = [[s - ny, s - ny - 1, s], [s - 1, s - ny - 1, s]];
-            for v in &vs {
-                let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], &mut dual_norm);
-                if let Some(e) = r {
-                    for i in 0..3 {
-                        d[v[i]] = min(e[i], d[v[i]]);
-                    }
+            let v = [s - ny - 1, s - ny, s];
+            let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], [1, 0], &mut dual_norm);
+            if let Some(e) = r {
+                for i in 0..3 {
+                    d[v[i]] = min(e[i], d[v[i]]);
+                }
+            }
+            let v = [s - ny - 1, s - 1, s];
+            let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], [0, 1], &mut dual_norm);
+            if let Some(e) = r {
+                for i in 0..3 {
+                    d[v[i]] = min(e[i], d[v[i]]);
                 }
             }
         }
@@ -363,5 +368,24 @@ mod test {
             triangle_dist([-1., 0., 0.]),
             Some([1. / (2f64).sqrt(), 0., 0.])
         );
+    }
+
+    #[test]
+    fn anisotropic_norm_2d() {
+        let u = [0., 0., 1., 1.];
+        let mut d = [0.; 4];
+        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| {
+            p[0].abs().max(2. * p[1].abs())
+        });
+
+        assert_eq!(d, [0., 0., 1., 1.]);
+
+        let u = [0., 1., 0., 1.];
+        let mut d = [0.; 4];
+        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| {
+            p[0].abs().max(2. * p[1].abs())
+        });
+
+        assert_eq!(d, [0., 0.5, 0., 0.5]);
     }
 }

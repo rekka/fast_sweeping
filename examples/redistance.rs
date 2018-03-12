@@ -108,7 +108,7 @@ fn main() {
 
     {
         {
-            let mut axes = fg.axes2d();
+            let axes = fg.axes2d();
             axes.set_aspect_ratio(AutoOption::Fix(1.));
 
             let grid_opt = [PlotOption::LineStyle(DashType::DotDash)];

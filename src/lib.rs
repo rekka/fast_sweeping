@@ -73,119 +73,9 @@ extern crate isosurface;
 pub mod level_set;
 pub mod eikonal;
 pub mod dist;
+pub mod norm;
 
-/// Implementation of min that compiles to the `minsd` instruction on intel.
-#[inline(always)]
-fn min(x: f64, y: f64) -> f64 {
-    if x > y {
-        y
-    } else {
-        x
-    }
-}
-
-/// Implementation of max that compiles to the `maxsd` instruction on intel.
-#[inline(always)]
-fn max(x: f64, y: f64) -> f64 {
-    if x < y {
-        y
-    } else {
-        x
-    }
-}
-
-/// Computes the signed distance from the _zero_ level set of the function given by the values of
-/// `u` on a regular 3D grid of dimensions `dim` and stores the result in a preallocated array `d`.
-///
-/// The zero level set is reconstructed by splitting each cube of the grid into 6 tetrahedra whose
-/// vertices have coordinates `(0, 0, 0)`, ..., ..., `(1, 1, 1)` (relative to the cube), and the
-/// following vertex in the sequence flips exactly one coordinate from `0` to `1`. The level set
-/// function is then assumed to be linear on the tetrahedron.
-///
-/// `h` is the distance between neighboring nodes.
-///
-/// `u` is assumed to be in the _row-major_ order (C order).
-///
-/// Returns `std::f64::MAX` if all `u` are positive and `-std::f64::MAX` if all `u` are negative.
-pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
-    anisotropic_signed_distance_3d(
-        d,
-        u,
-        dim,
-        h,
-        |p| (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]).sqrt(),
-        |d, v, _| {
-            let (a, b, c) = {
-                use std::mem::swap;
-                let mut a = v[0];
-                let mut b = v[1];
-                let mut c = v[2];
-
-                if a > b {
-                    swap(&mut a, &mut b);
-                }
-                if b > c {
-                    swap(&mut b, &mut c);
-                }
-                if a > b {
-                    swap(&mut a, &mut b);
-                }
-
-                (a, b, c)
-            };
-
-            let x = if b >= a + 1. {
-                a + 1.
-            } else {
-                let x = 0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt());
-                if x <= c {
-                    x
-                } else {
-                    let v = (1. / 3.)
-                        * (a + b + c
-                            + (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
-                    v
-                }
-            };
-
-            min(d, x)
-        },
-    );
-}
-
-pub fn max_signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
-    anisotropic_signed_distance_3d(
-        d,
-        u,
-        dim,
-        h,
-        |p| p[0].abs() + p[1].abs() + p[2].abs(),
-        |d, v, _| {
-            let (a, b, c) = {
-                use std::mem::swap;
-                let mut a = v[0];
-                let mut b = v[1];
-                let mut c = v[2];
-
-                if a > b {
-                    swap(&mut a, &mut b);
-                }
-                if b > c {
-                    swap(&mut b, &mut c);
-                }
-                if a > b {
-                    swap(&mut a, &mut b);
-                }
-
-                (a, b, c)
-            };
-            min(
-                min(d, a + 1.),
-                min(0.5 * (a + b + 1.), (1. / 3.) * (a + b + c + 1.)),
-            )
-        },
-    );
-}
+pub use norm::{DualNorm, EuclideanNorm, L1Norm, MaxNorm};
 
 /// Computes the signed distance from the _zero_ level set of the function given by the values of
 /// `u` on a regular 2D grid of dimensions `dim` and stores the result in a preallocated array `d`.
@@ -210,75 +100,43 @@ pub fn max_signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usiz
 ///
 /// Returns `std::f64::MAX` if all `u` are nonnegative (`-std::f64::MAX` if all `u` are negative).
 pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-    anisotropic_signed_distance_2d(
-        d,
-        u,
-        dim,
-        h,
-        |p| (p[0] * p[0] + p[1] * p[1]).sqrt(),
-        |d, v, _| {
-            let a = v[0];
-            let b = v[1];
-
-            let x = if (a - b).abs() >= 1. {
-                min(a, b) + 1.
-            } else {
-                0.5 * (a + b + (2. - (a - b) * (a - b)).sqrt())
-            };
-
-            min(d, x)
-        },
-    );
+    anisotropic_signed_distance_2d(d, u, dim, h, EuclideanNorm);
 }
 
-/// Signed distance in the max norm.
-pub fn max_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-    anisotropic_signed_distance_2d(
-        d,
-        u,
-        dim,
-        h,
-        |p| p[0].abs() + p[1].abs(),
-        |d, v, _| min(min(d, v[0] + 1.), min(v[1] + 1., 0.5 * (v[0] + v[1] + 1.))),
-    );
-}
-
-/// Signed distance in the l¹ norm.
-pub fn l1_signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-    anisotropic_signed_distance_2d(
-        d,
-        u,
-        dim,
-        h,
-        |p| max(p[0].abs(), p[1].abs()),
-        |d, v, _| min(d, min(v[0], v[1]) + 1.),
-    );
-}
-
-/// Computes the anisotropic signed distance function.
+/// Computes the signed distance from the _zero_ level set of the function given by the values of
+/// `u` on a regular 3D grid of dimensions `dim` and stores the result in a preallocated array `d`.
 ///
-/// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
+/// The zero level set is reconstructed by splitting each cube of the grid into 6 tetrahedra whose
+/// vertices have coordinates `(0, 0, 0)`, ..., ..., `(1, 1, 1)` (relative to the cube), and the
+/// following vertex in the sequence flips exactly one coordinate from `0` to `1`. The level set
+/// function is then assumed to be linear on the tetrahedron.
 ///
-/// `inv_dual_norm(d, [d_1, d_2], [s_1, s_2]) -> t` needs to solve the "inverse problem" for the
-/// norm: Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin
-/// such that `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic
-/// norm.
-pub fn anisotropic_signed_distance_2d<N, INV>(
+/// `h` is the distance between neighboring nodes.
+///
+/// `u` is assumed to be in the _row-major_ order (C order).
+///
+/// Returns `std::f64::MAX` if all `u` are positive and `-std::f64::MAX` if all `u` are negative.
+pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
+    anisotropic_signed_distance_3d(d, u, dim, h, EuclideanNorm);
+}
+
+/// Computes the anisotropic signed distance function for a given norm.
+///
+/// The norm must be even (||p|| = ||-p||).
+pub fn anisotropic_signed_distance_2d<N>(
     d: &mut [f64],
     u: &[f64],
     dim: (usize, usize),
     h: f64,
-    dual_norm: N,
-    inv_dual_norm: INV,
+    norm: N,
 ) where
-    N: FnMut([f64; 2]) -> f64,
-    INV: FnMut(f64, [f64; 2], [f64; 2]) -> f64,
+    N: DualNorm<[f64; 2], f64>,
 {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
 
-    level_set::init_anisotropic_dist_2d(d, u, dim, dual_norm);
-    eikonal::fast_sweep_anisotropic_dist_2d(d, dim, inv_dual_norm);
+    level_set::init_anisotropic_dist_2d(d, u, dim, |p| norm.dual_norm(p));
+    eikonal::fast_sweep_anisotropic_dist_2d(d, dim, |d, v, s| norm.inv_dual_norm(d, v, s));
 
     // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {
@@ -290,22 +148,23 @@ pub fn anisotropic_signed_distance_2d<N, INV>(
     }
 }
 
-pub fn anisotropic_signed_distance_3d<N, INV>(
+/// Computes the anisotropic signed distance function for a given norm.
+///
+/// The norm must be even (||p|| = ||-p||).
+pub fn anisotropic_signed_distance_3d<N>(
     d: &mut [f64],
     u: &[f64],
     dim: (usize, usize, usize),
     h: f64,
-    dual_norm: N,
-    inv_dual_norm: INV,
+    norm: N,
 ) where
-    N: FnMut([f64; 3]) -> f64,
-    INV: FnMut(f64, [f64; 3], [f64; 3]) -> f64,
+    N: DualNorm<[f64; 3], f64>,
 {
     assert_eq!(dim.0 * dim.1 * dim.2, u.len());
     assert_eq!(dim.0 * dim.1 * dim.2, d.len());
 
-    level_set::init_anisotropic_dist_3d(d, u, dim, dual_norm);
-    eikonal::fast_sweep_anisotropic_dist_3d(d, dim, inv_dual_norm);
+    level_set::init_anisotropic_dist_3d(d, u, dim, |p| norm.dual_norm(p));
+    eikonal::fast_sweep_anisotropic_dist_3d(d, dim, |d, v, s| norm.inv_dual_norm(d, v, s));
 
     // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {
@@ -314,6 +173,26 @@ pub fn anisotropic_signed_distance_3d<N, INV>(
         } else {
             d[i] *= h;
         }
+    }
+}
+
+/// Implementation of min that compiles to the `minsd` instruction on intel.
+#[inline(always)]
+fn min(x: f64, y: f64) -> f64 {
+    if x > y {
+        y
+    } else {
+        x
+    }
+}
+
+/// Implementation of max that compiles to the `maxsd` instruction on intel.
+#[inline(always)]
+fn max(x: f64, y: f64) -> f64 {
+    if x < y {
+        y
+    } else {
+        x
     }
 }
 
@@ -355,7 +234,7 @@ pub mod legacy {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     extern crate ndarray;
     extern crate quickcheck;
@@ -557,4 +436,5 @@ mod test {
         }
         quickcheck(prop as fn(f64) -> bool);
     }
+
 }

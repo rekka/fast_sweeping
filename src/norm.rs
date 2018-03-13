@@ -1,3 +1,10 @@
+//! Norms for the computation of anisotropic distance functions.
+//!
+//! For the fast sweeping algorithm, it is necessary to know the dual norm (convex polar) of the
+//! desired norm, not the norm itself. This is captured by the trait `DualNorm`.
+//!
+//! The correctness of the implementation can be tested using `test_inv_dual_norm_2d` and
+//! `test_inv_dual_norm_3d` functions.
 use super::{max, min};
 
 /// Trait for setting up anisotropic distance function computation.

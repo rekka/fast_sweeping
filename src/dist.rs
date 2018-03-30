@@ -55,6 +55,8 @@ fn line_integral_sq(u: f64, v: f64) -> f64 {
 
 /// Computes a L² version of the Hausdorff distance by integrating the square
 /// of the distance functions over the level set.
+///
+/// Returns +∞ if at least one of the level sets is empty.
 pub fn l2_hausdorff_dist_2d(u: &[f64], v: &[f64], dim: (usize, usize), h: f64) -> f64 {
     assert_eq!(u.len(), dim.0 * dim.1);
     assert_eq!(v.len(), dim.0 * dim.1);
@@ -102,6 +104,8 @@ fn triangle_area(c: [[f64; 3]; 3]) -> f64 {
 
 /// Computes a L² version of the Hausdorff distance by integrating the square
 /// of the distance functions over the level set.
+///
+/// Returns +∞ if at least one of the level sets is empty.
 pub fn l2_hausdorff_dist_3d(u: &[f64], v: &[f64], dim: (usize, usize, usize), h: f64) -> f64 {
     assert_eq!(u.len(), dim.0 * dim.1 * dim.2);
     assert_eq!(v.len(), dim.0 * dim.1 * dim.2);

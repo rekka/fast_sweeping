@@ -70,6 +70,10 @@ future optimizations are:
 [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
 603–627.
 
+## Python bindings
+
+See `python` directory.
+
 ## License
 
 MIT license: see the `LICENSE` file for details.

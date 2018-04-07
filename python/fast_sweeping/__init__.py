@@ -2,14 +2,20 @@ import numpy as np
 import cffi
 import subprocess
 import os
+import glob
 
 root = os.path.dirname(os.path.dirname(__file__))
 
+libs = glob.glob(root + "/fast_sweeping_capi.*.so")
+
+if len(libs) == 0:
+    raise(OSError("fast_sweeping_capi.*.so library not found"))
+
+if len(libs) > 1:
+    raise(OSError(("More then one candidate of fast_sweeping_capi.*.so library found: {}").format(libs)))
+
 ffi = cffi.FFI()
-try:
-    lib = ffi.dlopen(root + "/fast_sweeping_capi.cpython-36m-x86_64-linux-gnu.so")
-except OSError:
-    lib = ffi.dlopen(root + "/fast_sweeping_capi.cpython-36m-darwin.so")
+lib = ffi.dlopen(libs[0])
 
 ffi.cdef("""
 void signed_distance_2d(double*, double*, size_t, size_t, double);

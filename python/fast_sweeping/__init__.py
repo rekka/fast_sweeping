@@ -36,6 +36,10 @@ def verify_ffi_array(u, dtype):
         raise TypeError('Array must be properly aligned.')
 
 def signed_distance(u, h):
+    """
+    Computes the signed distance to the zero level set of the function `u`
+    given on a regular grid with spacing `h`.
+    """
     verify_ffi_array(u, np.dtype('float64'))
 
     d = np.zeros_like(u, order='c')

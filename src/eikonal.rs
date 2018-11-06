@@ -205,7 +205,7 @@ where
     // }
 
     // sweep in 4 directions
-    // try to avoid bound checks and impove cache locality (about 45% faster than the above version)
+    // try to avoid bounds checks and impove cache locality (about 45% faster than the above version)
     for p in 1..nx {
         let (di, dj) = d.split_at_mut(p * sx);
         let di = &di[(p - 1) * sx..][..ny];
@@ -213,7 +213,7 @@ where
         for q in 1..ny {
             let j = q;
             dj[j] = inv_dual_norm(dj[j], [di[j], dj[j - 1]], [1., 1.]);
-            // Rust 1.30 cannot optimize away 2 bound checks here :(
+            // Rust 1.30 cannot optimize away 2 bounds checks here :(
             let j = ny - 1 - q;
             dj[j] = inv_dual_norm(dj[j], [di[j], dj[j + 1]], [1., -1.]);
         }

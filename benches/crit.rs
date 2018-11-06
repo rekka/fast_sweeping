@@ -5,6 +5,7 @@ extern crate fast_sweeping;
 use criterion::{Bencher, Criterion};
 use fast_sweeping::level_set;
 use fast_sweeping::*;
+use std::time::Duration;
 
 fn bench_2d(b: &mut Bencher, dim: (usize, usize)) {
     let (nx, ny) = dim;
@@ -66,5 +67,12 @@ fn bench_init_dist_2d(c: &mut Criterion) {
     );
 }
 
-criterion_group!(benches, bench_signed_distance_2d, bench_init_dist_2d);
+criterion_group!{
+    name = benches;
+    config = Criterion::default()
+                .warm_up_time(Duration::from_millis(200))
+                .measurement_time(Duration::from_secs(1))
+                .sample_size(5);
+    targets = bench_signed_distance_2d, bench_init_dist_2d
+}
 criterion_main!(benches);

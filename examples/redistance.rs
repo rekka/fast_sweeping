@@ -7,12 +7,14 @@ extern crate isosurface;
 extern crate ndarray;
 extern crate rustc_serialize;
 
-use ndarray::prelude::*;
-use ndarray::Data;
 use fast_sweeping::signed_distance_2d;
 #[allow(unused_imports)]
-use gnuplot::{AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure,
-              Fix, PlotOption, TextColor};
+use gnuplot::{
+    AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure, Fix,
+    PlotOption, TextColor,
+};
+use ndarray::prelude::*;
+use ndarray::Data;
 
 const USAGE: &'static str = "
 Show effect of redistance.

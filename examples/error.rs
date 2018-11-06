@@ -7,13 +7,15 @@ extern crate isosurface;
 extern crate ndarray;
 extern crate rustc_serialize;
 
+use fast_sweeping::signed_distance_2d;
+#[allow(unused_imports)]
+use gnuplot::{
+    AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure, Fix,
+    PlotOption, TextColor,
+};
 use ndarray::prelude::*;
 use ndarray::Data;
 use ndarray::Zip;
-use fast_sweeping::signed_distance_2d;
-#[allow(unused_imports)]
-use gnuplot::{AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure,
-              Fix, PlotOption, TextColor};
 use std::f64::NAN;
 
 const USAGE: &'static str = "

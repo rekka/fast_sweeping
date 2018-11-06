@@ -70,9 +70,9 @@
 
 extern crate isosurface;
 
-pub mod level_set;
-pub mod eikonal;
 pub mod dist;
+pub mod eikonal;
+pub mod level_set;
 pub mod norm;
 
 pub use norm::{DualNorm, EuclideanNorm, L1Norm, MaxNorm};
@@ -238,9 +238,9 @@ mod tests {
     use super::*;
     extern crate ndarray;
     extern crate quickcheck;
-    use self::quickcheck::quickcheck;
     use self::ndarray::prelude::*;
     use self::ndarray::Si;
+    use self::quickcheck::quickcheck;
 
     fn check_line(gx: f64, gy: f64, c: f64, dim: (usize, usize), tol: f64, print: bool) -> bool {
         let (nx, ny) = dim;

@@ -79,7 +79,8 @@ impl DualNorm<[f64; 3], f64> for EuclideanNorm {
                 x
             } else {
                 let v = (1. / 3.)
-                    * (a + b + c
+                    * (a + b
+                        + c
                         + (3. + (a + b + c).powi(2) - 3. * (a * a + b * b + c * c)).sqrt());
                 v
             }

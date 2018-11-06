@@ -2,8 +2,10 @@ extern crate fast_sweeping;
 extern crate gnuplot;
 
 #[allow(unused_imports)]
-use gnuplot::{AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure,
-              Fix, PlotOption, TextColor};
+use gnuplot::{
+    AutoOption, AxesCommon, Caption, Color, ContourStyle, Coordinate, DashType, Figure, Fix,
+    PlotOption, TextColor,
+};
 
 fn main() {
     let n = 64;

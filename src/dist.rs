@@ -1,6 +1,6 @@
+use isosurface::{marching_tetrahedra_with_data_emit, marching_triangles_with_data_emit};
 use signed_distance_2d;
 use signed_distance_3d;
-use isosurface::{marching_tetrahedra_with_data_emit, marching_triangles_with_data_emit};
 
 /// Computes the Hausdorff distance function between two level sets of discrete functions given on
 /// the same square grid.

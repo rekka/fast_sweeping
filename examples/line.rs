@@ -1,9 +1,11 @@
 extern crate fast_sweeping;
 extern crate gnuplot;
 
-#[allow(unused_imports)]
-use gnuplot::{AxesCommon, Caption, Color, Coordinate, DashType, Figure, Fix, PlotOption, TextColor};
 use fast_sweeping::signed_distance_2d;
+#[allow(unused_imports)]
+use gnuplot::{
+    AxesCommon, Caption, Color, Coordinate, DashType, Figure, Fix, PlotOption, TextColor,
+};
 
 fn main() {
     let n = 64;
@@ -37,8 +39,8 @@ fn main() {
     let mut fg = Figure::new();
 
     fg.axes3d()
-        .surface(&err, n+1, n+1, None, &[])
+        .surface(&err, n + 1, n + 1, None, &[])
         // .surface(&d, n+1, n+1, None, &[])
-        .surface(&u, n+1, n+1, None, &[]);
+        .surface(&u, n + 1, n + 1, None, &[]);
     fg.show();
 }

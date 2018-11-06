@@ -1,5 +1,5 @@
-use std;
 use super::min;
+use std;
 
 /// Computes the signed distance function from a plane given as the _zero_ level set of a
 /// linear function on a tetrahedron at 4 points with unit coordinates starting at (0, 0, 0) and
@@ -144,10 +144,10 @@ pub fn tetrahedron_dist(mut u: [f64; 4]) -> Option<[f64; 4]> {
         return Some([0.; 4]);
     }
 
-    let g_norm_rcp = 1.
-        / u.windows(2)
-            .fold(0., |sum, x| sum + (x[1] - x[0]).powi(2))
-            .sqrt();
+    let g_norm_rcp = 1. / u
+        .windows(2)
+        .fold(0., |sum, x| sum + (x[1] - x[0]).powi(2))
+        .sqrt();
 
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;

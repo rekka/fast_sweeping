@@ -1,3 +1,4 @@
+//! Initialization of the signed distance function near the level set.
 use super::min;
 use std;
 

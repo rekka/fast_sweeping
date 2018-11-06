@@ -68,6 +68,8 @@
 //! [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
 //! 603–627.
 
+#![deny(missing_docs)]
+
 extern crate isosurface;
 
 pub mod dist;

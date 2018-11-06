@@ -1,3 +1,4 @@
+//! Implementations of the Hausdorff distance function between level sets.
 use isosurface::{marching_tetrahedra_with_data_emit, marching_triangles_with_data_emit};
 use signed_distance_2d;
 use signed_distance_3d;

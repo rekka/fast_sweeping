@@ -1,3 +1,4 @@
+//! Implementation of the fast sweeping method.
 use super::min;
 
 macro_rules! min_of {
@@ -12,6 +13,13 @@ macro_rules! min_of {
     };
 }
 
+/// Computes the solution of the eikonal equation in 3D using the fast sweeping algorithm.
+///
+/// `d` should be initialized to a large value at the unknown nodes.
+///
+/// `inv_dual_norm(d, [d1, d2, d3], [s1, s2, s3]) -> t` needs to solve the "inverse problem" for the norm:
+/// Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin such that
+/// `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic norm.
 pub fn fast_sweep_anisotropic_dist_3d<F>(
     d: &mut [f64],
     dim: (usize, usize, usize),

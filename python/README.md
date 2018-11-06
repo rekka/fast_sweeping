@@ -2,18 +2,21 @@ Python 3 module that exposes the `fast_sweeping` library.
 
 ## Installation
 
-1. Make sure that [Rust is installed](https://www.rust-lang.org/en-US/install.html).
+1. **Prerequisites.**
 
-2. Install the Python package `setuptools-rust`:
+    * Make sure that [Rust is installed](https://www.rust-lang.org/en-US/install.html).
+
+    * Install the Python package `setuptools-rust`:
+
+        ```bash
+        pip install setuptools-rust
+        ```
+
+2. Clone the repository and install the package:
 
     ```bash
-    pip install setuptools-rust
-    ```
-
-3. Install the `fast_sweeping` package: In the `fast_sweeping/python`
-   directory, run
-
-    ```bash
+    git clone https://github.com/rekka/fast_sweeping.git
+    cd fast_sweeping/python
     python setup.py install
     ```
 

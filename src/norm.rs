@@ -22,10 +22,10 @@ pub trait DualNorm<V, S> {
     fn inv_dual_norm(&self, d: S, v: V, s: V) -> S;
 }
 
-/// Euclidean (l^2) norm
+/// Euclidean (l²) norm
 pub struct EuclideanNorm;
 
-/// Dual norm for the max (l^∞) norm is the l^1 norm.
+/// Dual norm for the max (l∞) norm is the l¹ norm.
 impl DualNorm<[f64; 2], f64> for EuclideanNorm {
     #[inline(always)]
     fn dual_norm(&self, p: [f64; 2]) -> f64 {
@@ -46,7 +46,7 @@ impl DualNorm<[f64; 2], f64> for EuclideanNorm {
     }
 }
 
-/// Dual norm for the max (l^∞) norm is the l^1 norm.
+/// Dual norm for the max (l∞) norm is the l¹ norm.
 impl DualNorm<[f64; 3], f64> for EuclideanNorm {
     #[inline(always)]
     fn dual_norm(&self, p: [f64; 3]) -> f64 {
@@ -92,10 +92,10 @@ impl DualNorm<[f64; 3], f64> for EuclideanNorm {
     }
 }
 
-/// l^1 (taxicab, Manhattan) norm
+/// l¹ (taxicab, Manhattan) norm
 pub struct L1Norm;
 
-/// Dual norm for the l^1 norm is the l^∞ norm.
+/// Dual norm for the l¹ norm is the l∞ norm.
 impl DualNorm<[f64; 2], f64> for L1Norm {
     fn dual_norm(&self, p: [f64; 2]) -> f64 {
         max(p[0].abs(), p[1].abs())
@@ -106,10 +106,10 @@ impl DualNorm<[f64; 2], f64> for L1Norm {
     }
 }
 
-/// Maximum (l^∞) norm
+/// Maximum (l∞) norm
 pub struct MaxNorm;
 
-/// Dual norm for the max (l^∞) norm is the l^1 norm.
+/// Dual norm for the max (l∞) norm is the l¹ norm.
 impl DualNorm<[f64; 2], f64> for MaxNorm {
     fn dual_norm(&self, p: [f64; 2]) -> f64 {
         p[0].abs() + p[1].abs()
@@ -120,7 +120,7 @@ impl DualNorm<[f64; 2], f64> for MaxNorm {
     }
 }
 
-/// Dual norm for the max (l^∞) norm is the l^1 norm.
+/// Dual norm for the max (l∞) norm is the l¹ norm.
 impl DualNorm<[f64; 3], f64> for MaxNorm {
     fn dual_norm(&self, p: [f64; 3]) -> f64 {
         p[0].abs() + p[1].abs() + p[2].abs()

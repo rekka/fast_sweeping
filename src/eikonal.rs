@@ -116,11 +116,25 @@ where
         let dj = &mut dj[..ny];
         for q in 1..ny {
             let j = q;
+            // Two independent computations (both forward and reversed sweep at once). Instruction
+            // level parallelism! Major performance gain.
             dj[j] = inv_dual_norm(dj[j], [di[j], dj[j - 1]], [1., 1.]);
-            // Rust 1.30 cannot optimize away 2 bounds checks here :(
+            // rust 1.30 cannot optimize away 2 bounds checks here :(
             let j = ny - 1 - q;
             dj[j] = inv_dual_norm(dj[j], [di[j], dj[j + 1]], [1., -1.]);
         }
+        // The following code avoids bounds checks, but cannot exploit instruction level parallelism in the
+        // above loop.
+        // let mut prev = dj[0];
+        // for (dj, di) in (&mut dj[1..]).into_iter().zip(di[1..].into_iter()) {
+        //     prev = inv_dual_norm(*dj, [*di, prev], [1., 1.]);
+        //     *dj = prev;
+        // }
+        // let mut prev = dj[ny - 1];
+        // for (dj, di) in (&mut dj[..ny-1]).into_iter().zip(di[..ny-1].into_iter()).rev() {
+        //     prev = inv_dual_norm(*dj, [*di, prev], [1., -1.]);
+        //     *dj = prev;
+        // }
     }
     for p in (0..nx - 1).rev() {
         let (dj, di) = d.split_at_mut((p + 1) * sx);

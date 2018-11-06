@@ -1,6 +1,8 @@
 # fast_sweeping
 
-The fast sweeping method for the computation of the signed distance function in 2D in 3D.
+The fast sweeping method for the computation of the signed distance
+function in 2D in 3D. Implemented in Rust, with Python bindings (see
+`python` directory).
 
 Based on [1].
 

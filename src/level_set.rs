@@ -10,7 +10,7 @@ use std;
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
-pub fn tetrahedron_anisotropic_dist<F>(
+pub fn tetrahedron_dist<F>(
     mut u: [f64; 4],
     mut dual_norm: F,
     perm: [usize; 3],
@@ -58,7 +58,7 @@ where
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
 /// Splits every cube into six tetrahedra and computes the distance on each of them.
-pub fn init_anisotropic_dist_3d<F>(
+pub fn init_dist_3d<F>(
     d: &mut [f64],
     u: &[f64],
     dim: (usize, usize, usize),
@@ -104,7 +104,7 @@ pub fn init_anisotropic_dist_3d<F>(
                         v[m] = u[s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2];
                     }
 
-                    let r = tetrahedron_anisotropic_dist(v, &mut dual_norm, *perm);
+                    let r = tetrahedron_dist(v, &mut dual_norm, *perm);
                     if let Some(r) = r {
                         for m in 0..4 {
                             let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
@@ -135,7 +135,7 @@ pub fn init_anisotropic_dist_3d<F>(
 ///  0--1      0
 /// ```
 ///
-fn triangle_anisotropic_dist<F>(
+fn triangle_dist<F>(
     mut u: [f64; 3],
     perm: [usize; 2],
     mut dual_norm: F,
@@ -167,7 +167,7 @@ where
 /// As `init_dist_2d`, but for general anisotropic norm.
 ///
 /// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
-pub fn init_anisotropic_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut dual_norm: F)
+pub fn init_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut dual_norm: F)
 where
     F: FnMut([f64; 2]) -> f64,
 {
@@ -183,14 +183,14 @@ where
         for i in 1..ny {
             let s = j * ny + i;
             let v = [s - ny - 1, s - ny, s];
-            let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], [1, 0], &mut dual_norm);
+            let r = triangle_dist([u[v[0]], u[v[1]], u[v[2]]], [1, 0], &mut dual_norm);
             if let Some(e) = r {
                 for i in 0..3 {
                     d[v[i]] = min(e[i], d[v[i]]);
                 }
             }
             let v = [s - ny - 1, s - 1, s];
-            let r = triangle_anisotropic_dist([u[v[0]], u[v[1]], u[v[2]]], [0, 1], &mut dual_norm);
+            let r = triangle_dist([u[v[0]], u[v[1]], u[v[2]]], [0, 1], &mut dual_norm);
             if let Some(e) = r {
                 for i in 0..3 {
                     d[v[i]] = min(e[i], d[v[i]]);
@@ -207,21 +207,21 @@ mod test {
 
     #[test]
     fn simple_triangles() {
-        let triangle_dist =
-            |v| triangle_anisotropic_dist(v, [0, 1], |p| EuclideanNorm.dual_norm(p));
-        assert_eq!(triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
-        assert_eq!(triangle_dist([1., 1., 1.]), None);
-        assert_eq!(triangle_dist([-1., -1., -1.]), None);
+        let eucl_triangle_dist =
+            |v| triangle_dist(v, [0, 1], |p| EuclideanNorm.dual_norm(p));
+        assert_eq!(eucl_triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
+        assert_eq!(eucl_triangle_dist([1., 1., 1.]), None);
+        assert_eq!(eucl_triangle_dist([-1., -1., -1.]), None);
         assert_eq!(
-            triangle_dist([0., 1., 0.]),
+            eucl_triangle_dist([0., 1., 0.]),
             Some([0., 1. / (2f64).sqrt(), 0.])
         );
-        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
-        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));
-        assert_eq!(triangle_dist([1., 1., 0.]), Some([1., 1., 0.]));
-        assert_eq!(triangle_dist([-1., 0., 0.]), Some([1., 0., 0.]));
+        assert_eq!(eucl_triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
+        assert_eq!(eucl_triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));
+        assert_eq!(eucl_triangle_dist([1., 1., 0.]), Some([1., 1., 0.]));
+        assert_eq!(eucl_triangle_dist([-1., 0., 0.]), Some([1., 0., 0.]));
         assert_eq!(
-            triangle_dist([1., 0., 1.]),
+            eucl_triangle_dist([1., 0., 1.]),
             Some([1. / (2f64).sqrt(), 0., 1. / (2f64).sqrt()])
         );
     }
@@ -231,14 +231,14 @@ mod test {
         // Du = (1, 0)
         let u = [0., 0., 1., 1.];
         let mut d = [0.; 4];
-        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| p[0].abs().max(2. * p[1].abs()));
+        init_dist_2d(&mut d, &u, (2, 2), |p| p[0].abs().max(2. * p[1].abs()));
 
         assert_eq!(d, [0., 0., 1., 1.]);
 
         // Du = (0, 1)
         let u = [0., 1., 0., 1.];
         let mut d = [0.; 4];
-        init_anisotropic_dist_2d(&mut d, &u, (2, 2), |p| p[0].abs().max(2. * p[1].abs()));
+        init_dist_2d(&mut d, &u, (2, 2), |p| p[0].abs().max(2. * p[1].abs()));
 
         assert_eq!(d, [0., 0.5, 0., 0.5]);
     }
@@ -248,7 +248,7 @@ mod test {
         // Du = (1, 0, 0)
         let u = [0., 0., 0., 0., 1., 1., 1., 1.];
         let mut d = [0.; 8];
-        init_anisotropic_dist_3d(&mut d, &u, (2, 2, 2), |p| {
+        init_dist_3d(&mut d, &u, (2, 2, 2), |p| {
             p[0].abs().max(2. * p[1].abs()).max(4. * p[2].abs())
         });
 
@@ -257,7 +257,7 @@ mod test {
         // Du = (0, 1, 0)
         let u = [0., 0., 1., 1., 0., 0., 1., 1.];
         let mut d = [0.; 8];
-        init_anisotropic_dist_3d(&mut d, &u, (2, 2, 2), |p| {
+        init_dist_3d(&mut d, &u, (2, 2, 2), |p| {
             p[0].abs().max(2. * p[1].abs()).max(4. * p[2].abs())
         });
 
@@ -266,7 +266,7 @@ mod test {
         // Du = (0, 0, 1)
         let u = [0., 1., 0., 1., 0., 1., 0., 1.];
         let mut d = [0.; 8];
-        init_anisotropic_dist_3d(&mut d, &u, (2, 2, 2), |p| {
+        init_dist_3d(&mut d, &u, (2, 2, 2), |p| {
             p[0].abs().max(2. * p[1].abs()).max(4. * p[2].abs())
         });
 

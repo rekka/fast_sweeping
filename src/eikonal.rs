@@ -7,7 +7,7 @@
 /// `inv_dual_norm(d, [d1, d2, d3], [s1, s2, s3]) -> t` needs to solve the "inverse problem" for the norm:
 /// Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin such that
 /// `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic norm.
-pub fn fast_sweep_anisotropic_dist_3d<F>(
+pub fn fast_sweep_3d<F>(
     d: &mut [f64],
     dim: (usize, usize, usize),
     mut inv_dual_norm: F,
@@ -75,7 +75,7 @@ pub fn fast_sweep_anisotropic_dist_3d<F>(
 /// `inv_dual_norm(d, [d1, d2], [s1, s2]) -> t` needs to solve the "inverse problem" for the norm:
 /// Given values `d_i` at points `-s_i e_i`, find the largest value `t ≤ d` at the origin such that
 /// `||p|| ≤ 1`, where `p_i = (s_i (t - d_i))_+` and `||p||` is the __dual__ anisotropic norm.
-pub fn fast_sweep_anisotropic_dist_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_dual_norm: F)
+pub fn fast_sweep_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_dual_norm: F)
 where
     F: FnMut(f64, [f64; 2], [f64; 2]) -> f64,
 {

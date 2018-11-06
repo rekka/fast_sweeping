@@ -137,8 +137,8 @@ pub fn anisotropic_signed_distance_2d<N>(
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
 
-    level_set::init_anisotropic_dist_2d(d, u, dim, |p| norm.dual_norm(p));
-    eikonal::fast_sweep_anisotropic_dist_2d(d, dim, |d, v, s| norm.inv_dual_norm(d, v, s));
+    level_set::init_dist_2d(d, u, dim, |p| norm.dual_norm(p));
+    eikonal::fast_sweep_2d(d, dim, |d, v, s| norm.inv_dual_norm(d, v, s));
 
     // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {
@@ -165,8 +165,8 @@ pub fn anisotropic_signed_distance_3d<N>(
     assert_eq!(dim.0 * dim.1 * dim.2, u.len());
     assert_eq!(dim.0 * dim.1 * dim.2, d.len());
 
-    level_set::init_anisotropic_dist_3d(d, u, dim, |p| norm.dual_norm(p));
-    eikonal::fast_sweep_anisotropic_dist_3d(d, dim, |d, v, s| norm.inv_dual_norm(d, v, s));
+    level_set::init_dist_3d(d, u, dim, |p| norm.dual_norm(p));
+    eikonal::fast_sweep_3d(d, dim, |d, v, s| norm.inv_dual_norm(d, v, s));
 
     // compute the signed distance function from the solution of the eikonal equation
     for i in 0..d.len() {

@@ -116,182 +116,24 @@ pub fn init_anisotropic_dist_3d<F>(
     }
 }
 
-/// Computes the signed distance function from a plane given as the _zero_ level set of a
-/// linear function on a tetrahedron at 4 points with unit coordinates starting at (0, 0, 0) and
-/// ending at (1, 1, 1), and in between exactly one coordinate changes from 0 to 1.
+/// Compute the anisotropic distance to the zero level set of a function on a axes-aligned
+/// right triangle. The right angle is assumed to be at vertex 1.
 ///
-/// Inputs are `u`, the values at the vertices.
+/// `perm` specifies which leg of the triangle corresponds to the directions e₁ and e₂:
 ///
-/// The function returns the values of the (non-signed) distance function or `None` if the zero
-/// level set does not pass through the tetrahedron.
-pub fn tetrahedron_dist(mut u: [f64; 4]) -> Option<[f64; 4]> {
-    let mut n_pos = 0;
-    let mut n_neg = 0;
-    for u in &mut u {
-        if *u > 0. {
-            n_pos += 1;
-        } else if *u < 0. {
-            n_neg += 1;
-        }
-    }
-    // check if sign differs (level set goes throught the triangle)
-    if n_neg == 4 || n_pos == 4 {
-        return None;
-    }
-
-    // everything is zero
-    if n_neg + n_pos == 0 {
-        return Some([0.; 4]);
-    }
-
-    let g_norm_rcp = 1. / u
-        .windows(2)
-        .fold(0., |sum, x| sum + (x[1] - x[0]).powi(2))
-        .sqrt();
-
-    for u in u.iter_mut() {
-        *u = u.abs() * g_norm_rcp;
-    }
-    Some(u)
-}
-
-/// Initializes the distance around the free boundary.
+/// `[0, 1]`: 0-1 leg is parallel to e₁, 1-2 leg is parallel to e₂
+/// `[1, 0]`: 0-1 leg is parallel to e₂, 1-2 leg is parallel to e₁
 ///
-/// Based on the level set function with values `u` given on a regular grid, it computes the
-/// distance from the _zero_ level set in the nodes of the triangles through which the level set
-/// passes.  Stores the result in the preallocated slice `d`.
+/// ```text
+/// [0, 1]    [1, 0]
+/// ------    ------
 ///
-/// Nodes away from the boundary have their value set to `std::f64::MAX`.
-///
-/// Splits every square into two triangles and computes the distance on each of them.
-pub fn init_dist_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize)) {
-    let (nx, ny, nz) = dim;
-    assert_eq!(nx * ny * nz, u.len());
-    assert_eq!(nx * ny * nz, d.len());
-
-    for d in &mut *d {
-        *d = std::f64::MAX;
-    }
-
-    // split each cube into 6 tetrahedrons
-    let ids = [
-        [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
-        [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
-        [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
-        [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
-        [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
-        [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)],
-    ];
-
-    for i in 1..nx {
-        for j in 1..ny {
-            for k in 1..nz {
-                let s = i * ny * nz + j * nz + k;
-                let mut v = [0.; 4];
-
-                for idx in ids.iter() {
-                    for m in 0..4 {
-                        v[m] = u[s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2];
-                    }
-
-                    let r = tetrahedron_dist(v);
-                    if let Some(r) = r {
-                        for m in 0..4 {
-                            let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
-                            d[q] = min(d[q], r[m]);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// Computes the signed distance function from a line given as the _zero_ level set of a
-/// linear function on an isosceles right triangle. It preserves level sets of linear functions.
-///
-/// There does not see to be much point of trying to be smart and compute the distance to the line
-/// segments within the triangle. This shifts the level set even in a symmetric case when not
-/// needed. This simpler approach here seems to better preserve corners in the crystalline mean
-/// curvature flow.
-///
-/// Inputs are the values at the vertices. The vertex 0 is the one with the right angle.
-///
-/// The function returns the values of the distance function or `None` if the zero level set
-/// does not pass through the triangle.
-pub fn triangle_dist(mut u: [f64; 3]) -> Option<[f64; 3]> {
-    let mut n_pos = 0;
-    let mut n_neg = 0;
-    for u in &mut u {
-        if *u > 0. {
-            n_pos += 1;
-        } else if *u < 0. {
-            n_neg += 1;
-        }
-    }
-    // check if sign differs (level set goes throught the triangle)
-    if n_neg == 3 || n_pos == 3 {
-        return None;
-    }
-
-    // everything is zero
-    if n_neg + n_pos == 0 {
-        return Some([0., 0., 0.]);
-    }
-
-    let gx = u[1] - u[0];
-    let gy = u[2] - u[0];
-    let g_norm_rcp = 1. / (gx * gx + gy * gy).sqrt();
-
-    for u in u.iter_mut() {
-        *u = u.abs() * g_norm_rcp;
-    }
-    Some(u)
-}
-
-/// Initializes the distance around the free boundary.
-///
-/// Based on the _linear_ level set function with values `u` given on a regular grid, it computes
-/// the distance from the _zero_ level set (a line) in the nodes of the triangles through which the
-/// level set passes.  Stores the result in the preallocated slice `d`.
-///
-/// Nodes away from the boundary have their value set to `std::f64::MAX`.
-///
-/// Splits every square into two triangles and computes the distance on each of them.
-///
-/// ```text,ignore
-///   0,1 *----* 1,1
-///       |   /|
-///       |  / |
-///       | /  |
-///       |/   |
-///   0,0 *----* 1,0
+///     2      1--2
+///    /|      | /
+///   / |      |/
+///  0--1      0
 /// ```
-pub fn init_dist_2d(d: &mut [f64], u: &[f64], dim: (usize, usize)) {
-    let (nx, ny) = dim;
-    assert_eq!(nx * ny, u.len());
-    assert_eq!(nx * ny, d.len());
-
-    for d in &mut *d {
-        *d = std::f64::MAX;
-    }
-
-    for j in 1..nx {
-        for i in 1..ny {
-            let s = j * ny + i;
-            let vs = [[s - ny, s - ny - 1, s], [s - 1, s - ny - 1, s]];
-            for v in &vs {
-                let r = triangle_dist([u[v[0]], u[v[1]], u[v[2]]]);
-                if let Some(e) = r {
-                    for i in 0..3 {
-                        d[v[i]] = min(e[i], d[v[i]]);
-                    }
-                }
-            }
-        }
-    }
-}
-
+///
 fn triangle_anisotropic_dist<F>(
     mut u: [f64; 3],
     perm: [usize; 2],
@@ -323,6 +165,7 @@ where
     let g = [g[perm[0]], g[perm[1]]];
     let g_norm_rcp = 1. / dual_norm(g);
 
+    // TODO: This supports only even norms. Do we want to support triangle norms, for instance?
     for u in u.iter_mut() {
         *u = u.abs() * g_norm_rcp;
     }
@@ -368,25 +211,26 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::norm::{DualNorm, EuclideanNorm};
 
     #[test]
     fn simple_triangles() {
+        let triangle_dist =
+            |v| triangle_anisotropic_dist(v, [0, 1], |p| EuclideanNorm.dual_norm(p));
         assert_eq!(triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
         assert_eq!(triangle_dist([1., 1., 1.]), None);
         assert_eq!(triangle_dist([-1., -1., -1.]), None);
-        assert_eq!(triangle_dist([0., 1., 0.]), Some([0., 1., 0.]));
         assert_eq!(
-            triangle_dist([0., -1., -1.]),
-            Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()])
+            triangle_dist([0., 1., 0.]),
+            Some([0., 1. / (2f64).sqrt(), 0.])
         );
-        assert_eq!(
-            triangle_dist([0., 1., 1.]),
-            Some([0., 1. / (2f64).sqrt(), 1. / (2f64).sqrt()])
-        );
+        assert_eq!(triangle_dist([0., -1., -1.]), Some([0., 1., 1.]));
+        assert_eq!(triangle_dist([0., 1., 1.]), Some([0., 1., 1.]));
         assert_eq!(triangle_dist([1., 1., 0.]), Some([1., 1., 0.]));
+        assert_eq!(triangle_dist([-1., 0., 0.]), Some([1., 0., 0.]));
         assert_eq!(
-            triangle_dist([-1., 0., 0.]),
-            Some([1. / (2f64).sqrt(), 0., 0.])
+            triangle_dist([1., 0., 1.]),
+            Some([1. / (2f64).sqrt(), 0., 1. / (2f64).sqrt()])
         );
     }
 

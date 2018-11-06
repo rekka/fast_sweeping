@@ -4,6 +4,7 @@ extern crate fast_sweeping;
 
 use criterion::{Bencher, Criterion};
 use fast_sweeping::level_set;
+use fast_sweeping::norm::EuclideanNorm;
 use fast_sweeping::*;
 use std::time::Duration;
 
@@ -47,7 +48,7 @@ fn bench_init_2d(b: &mut Bencher, dim: (usize, usize)) {
     }
 
     b.iter(|| {
-        level_set::init_dist_2d(&mut d, &u, dim);
+        level_set::init_anisotropic_dist_2d(&mut d, &u, dim, |p| EuclideanNorm.dual_norm(p));
     });
 }
 
@@ -71,7 +72,7 @@ fn bench_init_3d(b: &mut Bencher, dim: (usize, usize, usize)) {
     }
 
     b.iter(|| {
-        level_set::init_dist_3d(&mut d, &u, dim);
+        level_set::init_anisotropic_dist_3d(&mut d, &u, dim, |p| EuclideanNorm.dual_norm(p));
     });
 }
 

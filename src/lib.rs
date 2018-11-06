@@ -196,43 +196,6 @@ fn max(x: f64, y: f64) -> f64 {
     }
 }
 
-pub mod legacy {
-    use super::*;
-
-    /// Original implementation (as in [Zhao])
-    pub fn signed_distance_2d(d: &mut [f64], u: &[f64], dim: (usize, usize), h: f64) {
-        assert_eq!(dim.0 * dim.1, u.len());
-        assert_eq!(dim.0 * dim.1, d.len());
-        level_set::init_dist_2d(d, u, dim);
-        eikonal::fast_sweep_dist_2d(d, dim);
-
-        // compute the signed distance function from the solution of the eikonal equation
-        for i in 0..d.len() {
-            if u[i] < 0. {
-                d[i] = -d[i] * h;
-            } else {
-                d[i] *= h;
-            }
-        }
-    }
-
-    pub fn signed_distance_3d(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), h: f64) {
-        assert_eq!(dim.0 * dim.1 * dim.2, u.len());
-        assert_eq!(dim.0 * dim.1 * dim.2, d.len());
-        level_set::init_dist_3d(d, u, dim);
-        eikonal::fast_sweep_dist_3d(d, dim);
-
-        // compute the signed distance function from the solution of the eikonal equation
-        for i in 0..d.len() {
-            if u[i] < 0. {
-                d[i] = -d[i] * h;
-            } else {
-                d[i] *= h;
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

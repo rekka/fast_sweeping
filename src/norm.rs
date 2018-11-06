@@ -27,6 +27,7 @@ pub struct EuclideanNorm;
 
 /// Dual norm for the max (l^∞) norm is the l^1 norm.
 impl DualNorm<[f64; 2], f64> for EuclideanNorm {
+    #[inline(always)]
     fn dual_norm(&self, p: [f64; 2]) -> f64 {
         (p[0] * p[0] + p[1] * p[1]).sqrt()
     }
@@ -47,6 +48,7 @@ impl DualNorm<[f64; 2], f64> for EuclideanNorm {
 
 /// Dual norm for the max (l^∞) norm is the l^1 norm.
 impl DualNorm<[f64; 3], f64> for EuclideanNorm {
+    #[inline(always)]
     fn dual_norm(&self, p: [f64; 3]) -> f64 {
         (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]).sqrt()
     }

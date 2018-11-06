@@ -1,150 +1,143 @@
-#![feature(test)]
+#[macro_use]
+extern crate criterion;
 extern crate fast_sweeping;
-extern crate test;
 
-mod bench_2d {
-    use test::{black_box, Bencher};
-    use fast_sweeping::*;
-    use fast_sweeping::level_set;
+use criterion::{Bencher, Criterion};
+use fast_sweeping::level_set;
+use fast_sweeping::*;
+use std::time::Duration;
 
-    fn bench_2d(b: &mut Bencher, dim: (usize, usize)) {
-        let (nx, ny) = dim;
-        let mut u = vec![0.; nx * ny];
-        let mut d = black_box(vec![0.; nx * ny]);
+fn bench_2d(b: &mut Bencher, dim: (usize, usize)) {
+    let (nx, ny) = dim;
+    let mut u = vec![0.; nx * ny];
+    let mut d = vec![0.; nx * ny];
 
-        let r = 0.3;
-        let hx = 1. / (nx - 1) as f64;
-        let hy = 1. / (ny - 1) as f64;
+    let r = 0.3;
+    let hx = 1. / (nx - 1) as f64;
+    let hy = 1. / (ny - 1) as f64;
 
-        for i in 0..nx {
-            for j in 0..ny {
-                let x = i as f64 * hx - 0.5;
-                let y = j as f64 * hy - 0.5;
-                u[i * ny + j] = (x * x + y * y).sqrt() - r;
-            }
+    for i in 0..nx {
+        for j in 0..ny {
+            let x = i as f64 * hx - 0.5;
+            let y = j as f64 * hy - 0.5;
+            u[i * ny + j] = (x * x + y * y).sqrt() - r;
         }
-
-        b.iter(|| {
-            signed_distance_2d(&mut d, &u, dim, hx);
-        });
     }
 
-    fn bench_init_2d(b: &mut Bencher, dim: (usize, usize)) {
-        let (nx, ny) = dim;
-        let mut u = vec![0.; nx * ny];
-        let mut d = black_box(vec![0.; nx * ny]);
-
-        let r = 0.3;
-        let hx = 1. / (nx - 1) as f64;
-        let hy = 1. / (ny - 1) as f64;
-
-        for i in 0..nx {
-            for j in 0..ny {
-                let x = i as f64 * hx - 0.5;
-                let y = j as f64 * hy - 0.5;
-                u[i * ny + j] = (x * x + y * y).sqrt() - r;
-            }
-        }
-
-        b.iter(|| {
-            level_set::init_dist_2d(&mut d, &u, dim);
-        });
-    }
-
-    #[bench]
-    fn s128(b: &mut Bencher) {
-        bench_2d(b, (128, 128));
-    }
-
-    #[bench]
-    fn init_s128(b: &mut Bencher) {
-        bench_init_2d(b, (128, 128));
-    }
-
-    #[bench]
-    fn s512(b: &mut Bencher) {
-        bench_2d(b, (512, 512));
-    }
-
-    #[bench]
-    fn init_s512(b: &mut Bencher) {
-        bench_init_2d(b, (512, 512));
-    }
-
-    // too slow now
-    // #[bench]
-    // fn s2048(b: &mut Bencher) {
-    //     bench_2d(b, (2048, 2048));
-    // }
-
+    b.iter(|| {
+        signed_distance_2d(&mut d, &u, dim, hx);
+    });
 }
 
-mod bench_3d {
+fn bench_init_2d(b: &mut Bencher, dim: (usize, usize)) {
+    let (nx, ny) = dim;
+    let mut u = vec![0.; nx * ny];
+    let mut d = vec![0.; nx * ny];
 
-    use test::{black_box, Bencher};
-    use fast_sweeping::*;
-    use fast_sweeping::level_set;
+    let r = 0.3;
+    let hx = 1. / (nx - 1) as f64;
+    let hy = 1. / (ny - 1) as f64;
 
-    fn bench_init_3d(b: &mut Bencher, dim: (usize, usize, usize)) {
-        let (nx, ny, nz) = dim;
-        let mut u = vec![0.; nx * ny * nz];
-        let mut d = black_box(vec![0.; nx * ny * nz]);
-
-        let r = 0.3;
-        let h = 1. / (nx - 1) as f64;
-
-        for i in 0..nx {
-            for j in 0..ny {
-                for k in 0..nz {
-                    let x = i as f64 * h - 0.5;
-                    let y = j as f64 * h - 0.5;
-                    let z = k as f64 * h - 0.5;
-                    u[i * ny * nz + j * nz + k] = (x * x + y * y + z * z).sqrt() - r;
-                }
-            }
+    for i in 0..nx {
+        for j in 0..ny {
+            let x = i as f64 * hx - 0.5;
+            let y = j as f64 * hy - 0.5;
+            u[i * ny + j] = (x * x + y * y).sqrt() - r;
         }
-
-        b.iter(|| {
-            level_set::init_dist_3d(&mut d, &u, dim);
-        });
     }
 
-    fn bench_3d(b: &mut Bencher, dim: (usize, usize, usize)) {
-        let (nx, ny, nz) = dim;
-        let mut u = vec![0.; nx * ny * nz];
-        let mut d = black_box(vec![0.; nx * ny * nz]);
-
-        let r = 0.3;
-        let h = 1. / (nx - 1) as f64;
-
-        for i in 0..nx {
-            for j in 0..ny {
-                for k in 0..nz {
-                    let x = i as f64 * h - 0.5;
-                    let y = j as f64 * h - 0.5;
-                    let z = k as f64 * h - 0.5;
-                    u[i * ny * nz + j * nz + k] = (x * x + y * y + z * z).sqrt() - r;
-                }
-            }
-        }
-
-        b.iter(|| {
-            signed_distance_3d(&mut d, &u, dim, h);
-        });
-    }
-
-    #[bench]
-    fn init_s32(b: &mut Bencher) {
-        bench_init_3d(b, (32, 32, 32));
-    }
-
-    #[bench]
-    fn s32(b: &mut Bencher) {
-        bench_3d(b, (32, 32, 32));
-    }
-
-    #[bench]
-    fn s64(b: &mut Bencher) {
-        bench_3d(b, (64, 64, 64));
-    }
+    b.iter(|| {
+        level_set::init_dist_2d(&mut d, &u, dim);
+    });
 }
+
+fn bench_init_3d(b: &mut Bencher, dim: (usize, usize, usize)) {
+    let (nx, ny, nz) = dim;
+    let mut u = vec![0.; nx * ny * nz];
+    let mut d = vec![0.; nx * ny * nz];
+
+    let r = 0.3;
+    let h = 1. / (nx - 1) as f64;
+
+    for i in 0..nx {
+        for j in 0..ny {
+            for k in 0..nz {
+                let x = i as f64 * h - 0.5;
+                let y = j as f64 * h - 0.5;
+                let z = k as f64 * h - 0.5;
+                u[i * ny * nz + j * nz + k] = (x * x + y * y + z * z).sqrt() - r;
+            }
+        }
+    }
+
+    b.iter(|| {
+        level_set::init_dist_3d(&mut d, &u, dim);
+    });
+}
+
+fn bench_3d(b: &mut Bencher, dim: (usize, usize, usize)) {
+    let (nx, ny, nz) = dim;
+    let mut u = vec![0.; nx * ny * nz];
+    let mut d = vec![0.; nx * ny * nz];
+
+    let r = 0.3;
+    let h = 1. / (nx - 1) as f64;
+
+    for i in 0..nx {
+        for j in 0..ny {
+            for k in 0..nz {
+                let x = i as f64 * h - 0.5;
+                let y = j as f64 * h - 0.5;
+                let z = k as f64 * h - 0.5;
+                u[i * ny * nz + j * nz + k] = (x * x + y * y + z * z).sqrt() - r;
+            }
+        }
+    }
+
+    b.iter(|| {
+        signed_distance_3d(&mut d, &u, dim, h);
+    });
+}
+
+fn bench_signed_distance_2d(c: &mut Criterion) {
+    c.bench_function_over_inputs(
+        "signed_distance_2d",
+        |b, &&size| bench_2d(b, (size, size)),
+        &[128, 512],
+    );
+}
+
+fn bench_init_dist_2d(c: &mut Criterion) {
+    c.bench_function_over_inputs(
+        "init_dist_2d",
+        |b, &&size| bench_init_2d(b, (size, size)),
+        &[128, 512],
+    );
+}
+
+fn bench_signed_distance_3d(c: &mut Criterion) {
+    c.bench_function_over_inputs(
+        "signed_distance_3d",
+        |b, &&size| bench_3d(b, (size, size, size)),
+        &[32, 64],
+    );
+}
+
+fn bench_init_dist_3d(c: &mut Criterion) {
+    c.bench_function_over_inputs(
+        "init_dist_3d",
+        |b, &&size| bench_init_3d(b, (size, size, size)),
+        &[32, 64],
+    );
+}
+
+criterion_group!{
+    name = benches;
+    config = Criterion::default()
+                .warm_up_time(Duration::from_millis(200))
+                .measurement_time(Duration::from_secs(1))
+                .sample_size(5);
+    targets = bench_signed_distance_2d, bench_init_dist_2d,
+                bench_signed_distance_3d, bench_init_dist_3d
+}
+criterion_main!(benches);

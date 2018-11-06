@@ -20,5 +20,5 @@ quickcheck = "0.2.27"
 criterion = "0.2"
 
 [[bench]]
-name = "crit"
+name = "bench"
 harness = false

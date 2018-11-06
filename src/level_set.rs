@@ -142,28 +142,19 @@ fn triangle_anisotropic_dist<F>(
 where
     F: FnMut([f64; 2]) -> f64,
 {
-    let mut n_pos = 0;
-    let mut n_neg = 0;
-    for u in &mut u {
-        if *u > 0. {
-            n_pos += 1;
-        } else if *u < 0. {
-            n_neg += 1;
-        }
-    }
     // check if sign differs (level set goes throught the triangle)
-    if n_neg == 3 || n_pos == 3 {
+    if (u[0] > 0. && u[1] > 0. && u[2] > 0.) || (u[0] < 0. && u[1] < 0. && u[2] < 0.) {
         return None;
-    }
-
-    // everything is zero
-    if n_neg + n_pos == 0 {
-        return Some([0., 0., 0.]);
     }
 
     let g = [u[1] - u[0], u[2] - u[1]];
     let g = [g[perm[0]], g[perm[1]]];
-    let g_norm_rcp = 1. / dual_norm(g);
+    let norm = dual_norm(g);
+    // all values are zero
+    if norm == 0. {
+        return Some([0., 0., 0.]);
+    }
+    let g_norm_rcp = 1. / norm;
 
     // TODO: This supports only even norms. Do we want to support triangle norms, for instance?
     for u in u.iter_mut() {

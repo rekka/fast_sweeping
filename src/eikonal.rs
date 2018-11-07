@@ -1,4 +1,12 @@
-//! Implementation of the fast sweeping method.
+//! The fast sweeping method for the eikonal equation.
+//!
+//! This is an implementation of the fast sweeping method proposed by Zhao (2004). It solves the
+//! eikonal equation
+//!
+//! ‖∇u‖ = 1,
+//!
+//! where ‖.‖ denotes a norm, by performing 2^N Gauss-Seidel sweeps in alternating directions. Here
+//! N is the dimension. Zhao showed that the accuracy for the Euclidean norm is O(h log h).
 
 /// Computes the solution of the eikonal equation in 3D using the fast sweeping algorithm.
 ///

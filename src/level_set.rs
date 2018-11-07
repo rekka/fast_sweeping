@@ -10,11 +10,7 @@ use std;
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
-pub fn tetrahedron_dist<F>(
-    mut u: [f64; 4],
-    mut dual_norm: F,
-    perm: [usize; 3],
-) -> Option<[f64; 4]>
+pub fn tetrahedron_dist<F>(mut u: [f64; 4], mut dual_norm: F, perm: [usize; 3]) -> Option<[f64; 4]>
 where
     F: FnMut([f64; 3]) -> f64,
 {
@@ -58,12 +54,8 @@ where
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
 /// Splits every cube into six tetrahedra and computes the distance on each of them.
-pub fn init_dist_3d<F>(
-    d: &mut [f64],
-    u: &[f64],
-    dim: (usize, usize, usize),
-    mut dual_norm: F,
-) where
+pub fn init_dist_3d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), mut dual_norm: F)
+where
     F: FnMut([f64; 3]) -> f64,
 {
     let (nx, ny, nz) = dim;
@@ -135,11 +127,7 @@ pub fn init_dist_3d<F>(
 ///  0--1      0
 /// ```
 ///
-fn triangle_dist<F>(
-    mut u: [f64; 3],
-    perm: [usize; 2],
-    mut dual_norm: F,
-) -> Option<[f64; 3]>
+fn triangle_dist<F>(mut u: [f64; 3], perm: [usize; 2], mut dual_norm: F) -> Option<[f64; 3]>
 where
     F: FnMut([f64; 2]) -> f64,
 {
@@ -207,8 +195,7 @@ mod test {
 
     #[test]
     fn simple_triangles() {
-        let eucl_triangle_dist =
-            |v| triangle_dist(v, [0, 1], |p| EuclideanNorm.dual_norm(p));
+        let eucl_triangle_dist = |v| triangle_dist(v, [0, 1], |p| EuclideanNorm.dual_norm(p));
         assert_eq!(eucl_triangle_dist([0., 0., 0.]), Some([0., 0., 0.]));
         assert_eq!(eucl_triangle_dist([1., 1., 1.]), None);
         assert_eq!(eucl_triangle_dist([-1., -1., -1.]), None);

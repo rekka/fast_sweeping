@@ -91,7 +91,7 @@ where
             let s = i * si + j * sj;
             let v = [u[s], u[s - si], u[s - sj], u[s - si - sj]];
             let mut all_pos_prev = v.iter().all(|&v| v > 0.);
-            let mut all_neg_prev = v[0] < 0. && v[1] < 0. && v[2] < 0. && v[3] < 0.;
+            let mut all_neg_prev = v.iter().all(|&v| v < 0.);
             for k in 1..nk {
                 let s = i * si + j * sj + k;
                 let v = [u[s], u[s - si], u[s - sj], u[s - si - sj]];

@@ -67,24 +67,26 @@ where
         *d = std::f64::MAX;
     }
 
-    // split each cube into 6 tetrahedrons
-    let ids = [
-        [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)],
-        [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)],
-        [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)],
-        [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)],
-        [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)],
-        [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)],
-    ];
+    macro_rules! tetra {
+        ($s:expr, [$v0:expr, $v1:expr, $v2:expr, $v3:expr], $perm:expr) => {
+            let (s0, s1, s2, s3) = (
+                $s - $v0.0 * si - $v0.1 * sj - $v0.2,
+                $s - $v1.0 * si - $v1.1 * sj - $v1.2,
+                $s - $v2.0 * si - $v2.1 * sj - $v2.2,
+                $s - $v3.0 * si - $v3.1 * sj - $v3.2,
+            );
+            let v = [u[s0], u[s1], u[s2], u[s3]];
 
-    let perms = [
-        [0, 1, 2],
-        [0, 2, 1],
-        [1, 0, 2],
-        [2, 0, 1],
-        [1, 2, 0],
-        [2, 1, 0],
-    ];
+            let r = tetrahedron_dist(v, &mut dual_norm, $perm);
+
+            if let Some(r) = r {
+                d[s0] = min(d[s0], r[0]);
+                d[s1] = min(d[s1], r[1]);
+                d[s2] = min(d[s2], r[2]);
+                d[s3] = min(d[s3], r[3]);
+            }
+        };
+    }
 
     for i in 1..ni {
         for j in 1..nj {
@@ -99,21 +101,12 @@ where
                 let mut all_neg = v[0] < 0. && v[1] < 0. && v[2] < 0. && v[3] < 0.;
 
                 if !((all_pos_prev && all_pos) || (all_neg_prev && all_neg)) {
-                    let mut v = [0.; 4];
-
-                    for (idx, perm) in ids.iter().zip(perms.iter()) {
-                        for m in 0..4 {
-                            v[m] = u[s - idx[m].0 * si - idx[m].1 * sj - idx[m].2];
-                        }
-
-                        let r = tetrahedron_dist(v, &mut dual_norm, *perm);
-                        if let Some(r) = r {
-                            for m in 0..4 {
-                                let q = s - idx[m].0 * si - idx[m].1 * sj - idx[m].2;
-                                d[q] = min(d[q], r[m]);
-                            }
-                        }
-                    }
+                    tetra!(s, [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)], [0, 1, 2]);
+                    tetra!(s, [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)], [0, 2, 1]);
+                    tetra!(s, [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)], [1, 0, 2]);
+                    tetra!(s, [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)], [2, 0, 1]);
+                    tetra!(s, [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)], [1, 2, 0]);
+                    tetra!(s, [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)], [2, 1, 0]);
                 }
                 all_pos_prev = all_pos;
                 all_neg_prev = all_neg;

@@ -2,11 +2,14 @@
 use super::min;
 use std;
 
-/// Computes the signed distance function from a plane given as the _zero_ level set of a
-/// linear function on a tetrahedron at 4 points with unit coordinates starting at (0, 0, 0) and
+/// Computes the signed distance function from a plane given as the _zero_ level set of a linear
+/// function on a tetrahedron with 4 vertices with unit coordinates starting at (0, 0, 0) and
 /// ending at (1, 1, 1), and in between exactly one coordinate changes from 0 to 1.
 ///
 /// Inputs are `u`, the values at the vertices.
+///
+/// `perm[a]` specifies on which step the coordinate `a` changes. For example, the first coordinate
+/// changes from vertex `perm[0]` to vertex `perm[0] + 1`.
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
@@ -61,23 +64,27 @@ where
     let (ni, nj, nk) = dim;
     assert_eq!(ni * nj * nk, u.len());
     assert_eq!(ni * nj * nk, d.len());
-    let (si, sj, _sk) = (nj * nk, nk, 1);
+    let (si, sj, sk) = (nj * nk, nk, 1);
 
     for d in &mut *d {
         *d = std::f64::MAX;
     }
 
     macro_rules! tetra {
-        ($s:expr, [$v0:expr, $v1:expr, $v2:expr, $v3:expr], $perm:expr) => {
-            let (s0, s1, s2, s3) = (
-                $s - $v0.0 * si - $v0.1 * sj - $v0.2,
-                $s - $v1.0 * si - $v1.1 * sj - $v1.2,
-                $s - $v2.0 * si - $v2.1 * sj - $v2.2,
-                $s - $v3.0 * si - $v3.1 * sj - $v3.2,
-            );
+        ($s:expr, [$pi:expr, $pj:expr, $pk:expr]) => {
+            // $pi specifies at which step the i-th coordinate changes, etc.
+            let offset = |step|
+                            if $pi == step { si } else { 0 } +
+                            if $pj == step { sj } else { 0 } +
+                            if $pk == step { sk } else { 0 };
+
+            let s0 = $s;
+            let s1 = s0 - offset(0);
+            let s2 = s1 - offset(1);
+            let s3 = s2 - offset(2);
             let v = [u[s0], u[s1], u[s2], u[s3]];
 
-            let r = tetrahedron_dist(v, &mut dual_norm, $perm);
+            let r = tetrahedron_dist(v, &mut dual_norm, [$pi, $pj, $pk]);
 
             if let Some(r) = r {
                 d[s0] = min(d[s0], r[0]);
@@ -101,12 +108,12 @@ where
                 let mut all_neg = v[0] < 0. && v[1] < 0. && v[2] < 0. && v[3] < 0.;
 
                 if !((all_pos_prev && all_pos) || (all_neg_prev && all_neg)) {
-                    tetra!(s, [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1)], [0, 1, 2]);
-                    tetra!(s, [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 1)], [0, 2, 1]);
-                    tetra!(s, [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 1, 1)], [1, 0, 2]);
-                    tetra!(s, [(0, 0, 0), (0, 1, 0), (0, 1, 1), (1, 1, 1)], [2, 0, 1]);
-                    tetra!(s, [(0, 0, 0), (0, 0, 1), (1, 0, 1), (1, 1, 1)], [1, 2, 0]);
-                    tetra!(s, [(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1)], [2, 1, 0]);
+                    tetra!(s, [0, 1, 2]);
+                    tetra!(s, [0, 2, 1]);
+                    tetra!(s, [1, 0, 2]);
+                    tetra!(s, [2, 0, 1]);
+                    tetra!(s, [1, 2, 0]);
+                    tetra!(s, [2, 1, 0]);
                 }
                 all_pos_prev = all_pos;
                 all_neg_prev = all_neg;

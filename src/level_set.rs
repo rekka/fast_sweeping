@@ -13,32 +13,26 @@ use std;
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
+#[inline(always)]
 pub fn tetrahedron_dist<F>(mut u: [f64; 4], mut dual_norm: F, perm: [usize; 3]) -> Option<[f64; 4]>
 where
     F: FnMut([f64; 3]) -> f64,
 {
-    let mut n_pos = 0;
-    let mut n_neg = 0;
-    for u in &mut u {
-        if *u > 0. {
-            n_pos += 1;
-        } else if *u < 0. {
-            n_neg += 1;
-        }
-    }
-    // check if sign differs (level set goes throught the triangle)
-    if n_neg == 4 || n_pos == 4 {
+    // iterator is a bit slower
+    if (u[0] > 0. && u[1] > 0. && u[2] > 0. && u[3] > 0.)
+        || (u[0] < 0. && u[1] < 0. && u[2] < 0. && u[3] < 0.)
+    {
         return None;
-    }
-
-    // everything is zero
-    if n_neg + n_pos == 0 {
-        return Some([0.; 4]);
     }
 
     let g = [u[1] - u[0], u[2] - u[1], u[3] - u[2]];
     let g = [g[perm[0]], g[perm[1]], g[perm[2]]];
-    let g_norm_rcp = 1. / dual_norm(g);
+    let norm = dual_norm(g);
+    // everything is zero
+    if norm == 0. {
+        return Some([0.; 4]);
+    }
+    let g_norm_rcp = 1. / norm;
 
     // FIXME: this requires for norm to be even
     // Support triangular anisotropies?
@@ -48,15 +42,17 @@ where
     Some(u)
 }
 
-/// Initializes the distance around the free boundary.
+/// Initializes the distance function near the free boundary.
 ///
-/// Based on the level set function with values `u` given on a regular grid, it computes the
-/// distance from the _zero_ level set in the nodes of the triangles through which the level set
-/// passes.  Stores the result in the preallocated slice `d`.
+/// Splits every cube into six tetrahedra. Based on the level set function with values `u` given
+/// on a regular grid, it computes the distance from the _zero_ level set in the nodes of the
+/// tetrahedra through which the level set passes.  Stores the minimal value of the distance in the
+/// preallocated slice `d`.
 ///
 /// Nodes away from the boundary have their value set to `std::f64::MAX`.
 ///
-/// Splits every cube into six tetrahedra and computes the distance on each of them.
+/// `dual_norm` is the __dual__ norm. It must be an __even__ positively one-homogeneous function,
+/// zero only at the origin.
 pub fn init_dist_3d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), mut dual_norm: F)
 where
     F: FnMut([f64; 3]) -> f64,
@@ -74,9 +70,9 @@ where
         ($s:expr, [$pi:expr, $pj:expr, $pk:expr]) => {
             // $pi specifies at which step the i-th coordinate changes, etc.
             let offset = |step|
-                            if $pi == step { si } else { 0 } +
-                            if $pj == step { sj } else { 0 } +
-                            if $pk == step { sk } else { 0 };
+                                        if $pi == step { si } else { 0 } +
+                                        if $pj == step { sj } else { 0 } +
+                                        if $pk == step { sk } else { 0 };
 
             let s0 = $s;
             let s1 = s0 - offset(0);
@@ -165,9 +161,17 @@ where
     Some(u)
 }
 
-/// As `init_dist_2d`, but for general anisotropic norm.
+/// Initializes the distance function near the free boundary.
 ///
-/// `dual_norm` is the __dual__ norm. It must be a positively one-homogeneous function.
+/// Splits every square into two triangles. Based on the level set function with values `u` given
+/// on a regular grid, it computes the distance from the _zero_ level set in the nodes of the
+/// triangle through which the level set passes.  Stores the minimal value of the distance in the
+/// preallocated slice `d`.
+///
+/// Nodes away from the boundary have their value set to `std::f64::MAX`.
+///
+/// `dual_norm` is the __dual__ norm. It must be an __even__ positively one-homogeneous function,
+/// zero only at the origin.
 pub fn init_dist_2d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize), mut dual_norm: F)
 where
     F: FnMut([f64; 2]) -> f64,

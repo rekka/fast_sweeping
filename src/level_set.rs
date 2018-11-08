@@ -58,9 +58,10 @@ pub fn init_dist_3d<F>(d: &mut [f64], u: &[f64], dim: (usize, usize, usize), mut
 where
     F: FnMut([f64; 3]) -> f64,
 {
-    let (nx, ny, nz) = dim;
-    assert_eq!(nx * ny * nz, u.len());
-    assert_eq!(nx * ny * nz, d.len());
+    let (ni, nj, nk) = dim;
+    assert_eq!(ni * nj * nk, u.len());
+    assert_eq!(ni * nj * nk, d.len());
+    let (si, sj, _sk) = (nj * nk, nk, 1);
 
     for d in &mut *d {
         *d = std::f64::MAX;
@@ -85,25 +86,37 @@ where
         [2, 1, 0],
     ];
 
-    for i in 1..nx {
-        for j in 1..ny {
-            for k in 1..nz {
-                let s = i * ny * nz + j * nz + k;
-                let mut v = [0.; 4];
+    for i in 1..ni {
+        for j in 1..nj {
+            let s = i * si + j * sj;
+            let v = [u[s], u[s - si], u[s - sj], u[s - si - sj]];
+            let mut all_pos_prev = v.iter().all(|&v| v > 0.);
+            let mut all_neg_prev = v[0] < 0. && v[1] < 0. && v[2] < 0. && v[3] < 0.;
+            for k in 1..nk {
+                let s = i * si + j * sj + k;
+                let v = [u[s], u[s - si], u[s - sj], u[s - si - sj]];
+                let mut all_pos = v.iter().all(|&v| v > 0.);
+                let mut all_neg = v[0] < 0. && v[1] < 0. && v[2] < 0. && v[3] < 0.;
 
-                for (idx, perm) in ids.iter().zip(perms.iter()) {
-                    for m in 0..4 {
-                        v[m] = u[s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2];
-                    }
+                if !((all_pos_prev && all_pos) || (all_neg_prev && all_neg)) {
+                    let mut v = [0.; 4];
 
-                    let r = tetrahedron_dist(v, &mut dual_norm, *perm);
-                    if let Some(r) = r {
+                    for (idx, perm) in ids.iter().zip(perms.iter()) {
                         for m in 0..4 {
-                            let q = s - idx[m].0 * ny * nz - idx[m].1 * nz - idx[m].2;
-                            d[q] = min(d[q], r[m]);
+                            v[m] = u[s - idx[m].0 * si - idx[m].1 * sj - idx[m].2];
+                        }
+
+                        let r = tetrahedron_dist(v, &mut dual_norm, *perm);
+                        if let Some(r) = r {
+                            for m in 0..4 {
+                                let q = s - idx[m].0 * si - idx[m].1 * sj - idx[m].2;
+                                d[q] = min(d[q], r[m]);
+                            }
                         }
                     }
                 }
+                all_pos_prev = all_pos;
+                all_neg_prev = all_neg;
             }
         }
     }

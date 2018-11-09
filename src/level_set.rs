@@ -9,12 +9,14 @@ use std;
 /// Inputs are `u`, the values at the vertices.
 ///
 /// `perm[a]` specifies on which step the coordinate `a` changes. For example, the first coordinate
-/// changes from vertex `perm[0]` to vertex `perm[0] + 1`.
+/// changes from vertex `perm[0]` to vertex `perm[0] + 1`. Equivalently, `perm[0]` specifies which
+/// edge of the tetrahedron is parallel to the first vector in the canonical basis, e₁. See
+/// [`triangle_dist`](fn.triangle_dist.html) for more.
 ///
 /// The function returns the values of the (non-signed) distance function or `None` if the zero
 /// level set does not pass through the tetrahedron.
 #[inline(always)]
-pub fn tetrahedron_dist<F>(mut u: [f64; 4], mut dual_norm: F, perm: [usize; 3]) -> Option<[f64; 4]>
+fn tetrahedron_dist<F>(mut u: [f64; 4], mut dual_norm: F, perm: [usize; 3]) -> Option<[f64; 4]>
 where
     F: FnMut([f64; 3]) -> f64,
 {
@@ -123,17 +125,17 @@ where
 ///
 /// `perm` specifies which leg of the triangle corresponds to the directions e₁ and e₂:
 ///
-/// `[0, 1]`: 0-1 leg is parallel to e₁, 1-2 leg is parallel to e₂
-/// `[1, 0]`: 0-1 leg is parallel to e₂, 1-2 leg is parallel to e₁
+/// * `[0, 1]`: 0-1 leg is parallel to e₁, 1-2 leg is parallel to e₂
+/// * `[1, 0]`: 0-1 leg is parallel to e₂, 1-2 leg is parallel to e₁
 ///
 /// ```text
 /// [0, 1]    [1, 0]
 /// ------    ------
 ///
-///     2      1--2
-///    /|      | /
-///   / |      |/
-///  0--1      0
+///     2      1--2         ^ e₂
+///    /|      | /          |
+///   / |      |/           |
+///  0--1      0            +---> e₁
 /// ```
 ///
 fn triangle_dist<F>(mut u: [f64; 3], perm: [usize; 2], mut dual_norm: F) -> Option<[f64; 3]>

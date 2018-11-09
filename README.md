@@ -21,7 +21,9 @@ At the top of your crate add:
 extern crate fast_sweeping;
 ```
 
-Depending on the dimension, use `signed_distance_2d` or `signed_distance_3d`.
+Depending on the dimension, use `signed_distance_2d` or `signed_distance_3d` for the Euclidean
+distance, or `anisotropic_signed_distance_2d`, `anisotropic_signed_distance_3d` for other
+norms.
 
 ### Accuracy
 
@@ -57,20 +59,19 @@ For an example see `examples/redistance`.
 Here we use the simplest first order upwind numerical discretization as given in [1]. This
 gives an error of order `O(|h log h|)`.
 
-### Performance
-
-The performance is limited by the speed of computing `sqrt` during the sweeps. Possible
-future optimizations are:
-
-  - Only compute distance in a small neighborhood of the level set.
-  - Compute two square roots in one instruction `sqrtpd`.
-  - Use multiple threads. However, this is relatively nontrivial due to the sequential nature of
-    the Gauss-Seidel iteration.
-
 ### References
 
 [1] Zhao, Hongkai A fast sweeping method for eikonal equations. Math. Comp. 74 (2005), no. 250,
 603–627.
+
+## Future work
+
+ * Support noneven distances.
+ * Support `f32`.
+ * Possible optimizations are:
+     - Only compute distance in a small neighborhood of the level set.
+     - Use multiple threads. However, this is relatively nontrivial due to the sequential nature of
+       the Gauss-Seidel iteration.
 
 ## Python bindings
 

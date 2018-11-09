@@ -1,6 +1,6 @@
 //! Norms for the computation of anisotropic distance functions.
 //!
-//! For the fast sweeping algorithm, it is necessary to know the dual norm (convex polar) of the
+//! For the fast sweeping algorithm, it is necessary to know the __dual norm__ (convex polar) of the
 //! desired norm, not the norm itself. This is captured by the trait `DualNorm`.
 //!
 //! The correctness of the implementation can be tested using `test_inv_dual_norm_2d` and
@@ -22,7 +22,8 @@ pub trait DualNorm<V, S> {
     fn inv_dual_norm(&self, d: S, v: V, s: V) -> S;
 }
 
-/// Euclidean (l²) norm
+/// Euclidean (l²) norm ‖v‖ = √(|v₁|² + |v₂|² + ...)
+#[derive(Clone, Copy, Debug)]
 pub struct EuclideanNorm;
 
 /// Dual norm for the max (l∞) norm is the l¹ norm.
@@ -92,7 +93,8 @@ impl DualNorm<[f64; 3], f64> for EuclideanNorm {
     }
 }
 
-/// l¹ (taxicab, Manhattan) norm
+/// l¹ (taxicab, Manhattan) norm ‖v‖ = |v₁| + |v₂| + ...
+#[derive(Clone, Copy, Debug)]
 pub struct L1Norm;
 
 /// Dual norm for the l¹ norm is the l∞ norm.
@@ -106,7 +108,8 @@ impl DualNorm<[f64; 2], f64> for L1Norm {
     }
 }
 
-/// Maximum (l∞) norm
+/// Maximum (l∞) norm ‖v‖ = max(|v₁|, |v₂|, ...).
+#[derive(Clone, Copy, Debug)]
 pub struct MaxNorm;
 
 /// Dual norm for the max (l∞) norm is the l¹ norm.

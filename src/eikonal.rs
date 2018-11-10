@@ -20,29 +20,29 @@ pub fn fast_sweep_2d<F>(d: &mut [f64], dim: (usize, usize), mut inv_norm: F)
 where
     F: FnMut(f64, [f64; 2], [f64; 2]) -> f64,
 {
-    let (nx, ny) = dim;
-    let (sx, _sy) = (ny, 1);
-    assert_eq!(nx * ny, d.len());
+    let (ni, nj) = dim;
+    let (si, _sj) = (nj, 1);
+    assert_eq!(ni * nj, d.len());
     // sweep in 4 directions
     // for m in 0..4 {
-    //     for p in 1..nx {
+    //     for p in 1..ni {
     //         let (i, ip, isign) = if m & 0b001 == 0 {
-    //             (nx - 1 - p, nx - 1 - p + 1, -1.)
+    //             (ni - 1 - p, ni - 1 - p + 1, -1.)
     //         } else {
     //             (p, p - 1, 1.)
     //         };
-    //         for q in 1..ny {
+    //         for q in 1..nj {
     //             let (j, jp, jsign) = if m & 0b010 == 0 {
-    //                 (ny - 1 - q, ny - 1 - q + 1, -1.)
+    //                 (nj - 1 - q, nj - 1 - q + 1, -1.)
     //             } else {
     //                 (q, q - 1, 1.)
     //             };
     //
-    //             let s = i * sx + j * sy;
+    //             let s = i * si + j * sj;
     //
     //             d[s] = inv_dual_norm(
     //                 d[s],
-    //                 [d[ip * sx + j * sy], d[i * sx + jp * sy]],
+    //                 [d[ip * si + j * sj], d[i * si + jp * sj]],
     //                 [isign, jsign],
     //             );
     //         }
@@ -51,17 +51,17 @@ where
 
     // sweep in 4 directions
     // try to avoid bounds checks and impove cache locality (about 45% faster than the above version)
-    for p in 1..nx {
-        let (di, dj) = d.split_at_mut(p * sx);
-        let di = &di[(p - 1) * sx..][..ny];
-        let dj = &mut dj[..ny];
-        for q in 1..ny {
+    for p in 1..ni {
+        let (di, dj) = d.split_at_mut(p * si);
+        let di = &di[(p - 1) * si..][..nj];
+        let dj = &mut dj[..nj];
+        for q in 1..nj {
             let j = q;
             // Two independent computations (both forward and reversed sweep at once). Instruction
             // level parallelism! Major performance gain.
             dj[j] = inv_norm(dj[j], [di[j], dj[j - 1]], [1., 1.]);
             // rust 1.30 cannot optimize away 2 bounds checks here :(
-            let j = ny - 1 - q;
+            let j = nj - 1 - q;
             dj[j] = inv_norm(dj[j], [di[j], dj[j + 1]], [1., -1.]);
         }
         // The following code avoids bounds checks, but cannot exploit instruction level parallelism in the
@@ -71,20 +71,20 @@ where
         //     prev = inv_norm(*dj, [*di, prev], [1., 1.]);
         //     *dj = prev;
         // }
-        // let mut prev = dj[ny - 1];
-        // for (dj, di) in (&mut dj[..ny-1]).into_iter().zip(di[..ny-1].into_iter()).rev() {
+        // let mut prev = dj[nj - 1];
+        // for (dj, di) in (&mut dj[..nj-1]).into_iter().zip(di[..nj-1].into_iter()).rev() {
         //     prev = inv_norm(*dj, [*di, prev], [1., -1.]);
         //     *dj = prev;
         // }
     }
-    for p in (0..nx - 1).rev() {
-        let (dj, di) = d.split_at_mut((p + 1) * sx);
-        let di = &di[..ny];
-        let dj = &mut dj[p * sx..][..ny];
-        for q in 1..ny {
+    for p in (0..ni - 1).rev() {
+        let (dj, di) = d.split_at_mut((p + 1) * si);
+        let di = &di[..nj];
+        let dj = &mut dj[p * si..][..nj];
+        for q in 1..nj {
             let j = q;
             dj[j] = inv_norm(dj[j], [di[j], dj[j - 1]], [-1., 1.]);
-            let j = ny - 1 - q;
+            let j = nj - 1 - q;
             dj[j] = inv_norm(dj[j], [di[j], dj[j + 1]], [-1., -1.]);
         }
     }

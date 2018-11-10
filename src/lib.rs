@@ -70,6 +70,7 @@
 #![deny(missing_docs)]
 
 extern crate isosurface;
+extern crate ndarray;
 
 pub mod dist;
 pub mod eikonal;
@@ -200,10 +201,9 @@ fn max(x: f64, y: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    extern crate ndarray;
     extern crate quickcheck;
     use self::ndarray::prelude::*;
-    use self::ndarray::Si;
+    use ndarray::s;
     use self::quickcheck::quickcheck;
 
     fn check_line(gx: f64, gy: f64, c: f64, dim: (usize, usize), tol: f64, print: bool) -> bool {
@@ -312,7 +312,7 @@ mod tests {
                 Array::from_shape_vec((n, n), d2).unwrap()
             };
             // check only elements away from the boundary
-            let s = &[Si(2, Some(-2), 1), Si(2, Some(-2), 1)];
+            let s = s![2..-2, 2..-2];
             d.slice(s).all_close(&d2.slice(s), 0.001)
         }
         quickcheck(prop as fn(f64) -> bool);

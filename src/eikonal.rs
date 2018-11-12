@@ -26,10 +26,20 @@ where
     F: Fn(f64, [f64; 2], [f64; 2]) -> f64 + Sync + Send,
 {
     let (ni, nj) = dim;
-    let (si, _sj) = (nj, 1);
     assert_eq!(ni * nj, d.len());
+    // Unwrap in band_sweep! fails if nj < 3. TODO: Support sizes < 3?
+    assert!(
+        ni >= 3 && nj >= 3,
+        "The array dimensions must be at least (3, 3), were ({}, {})",
+        ni,
+        nj
+    );
+
+    // array strides
+    let (si, _sj) = (nj, 1);
     // sweep in 4 directions
-    // propagate information from the corners
+
+    // Propagate information along the edges.
     for p in 1..nj {
         let s = p;
         d[s] = inv_norm(d[s], [std::f64::MAX, d[s - 1]], [1., 1.]);
@@ -52,122 +62,115 @@ where
         let s = p * si + nj - 1;
         d[s] = inv_norm(d[s], [d[s + si], std::f64::MAX], [-1., -1.]);
     }
-    // sweep in diagonal bands to take advantage of instruction-level parallelism
-    // 1, 1
-    for band in 1..nj {
-        let len = cmp::min(band + 1, ni);
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si - 1, 1)),
-            &mut d[band..][..(len - 1) * (si - 1) + 2],
-        ).unwrap();
-        let (input, mut output) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![..-1, 0]);
-        let dj = input.slice(s![1.., 0]);
-        let mut out = output.slice_mut(s![1.., 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [1., 1.])});
+
+    // We sweep in diagonal bands to take advantage of an instruction-level parallelism. This also
+    // allows for potential parallelization.
+    //
+    // We "parametrize" bands by increasing i: (ci, cj) = coord on the band within the square
+    // with the smallest i.
+
+    // Diagonal i + j = band intersecting the square {0, .., ni - 1} x {0, .. nj - 1}
+    //
+    // Ex: band 3      (ci, cj)
+    //                 V
+    //   +--> j     ⋅⋅⋅#⋅
+    //   |          ⋅⋅*⋅⋅
+    //   |          ⋅*⋅⋅⋅
+    //   V i        *⋅⋅⋅⋅
+    //              ⋅⋅⋅⋅⋅
+    let band_plus = |band| {
+        let ci = if band >= nj { band - nj + 1 } else { 0 };
+        let cj = cmp::min(band, nj - 1);
+        let len = cmp::min(band + 1, ni) - ci;
+        (ci, cj, len)
+    };
+    // Diagonal j - i = band - (ni - 1) intersecting the square {0, .., ni - 1} x {0, .. nj - 1}
+    //
+    // Ex: band 5   (ci, cj)
+    //              V
+    //   +--> j    ⋅#⋅⋅⋅
+    //   |         ⋅⋅*⋅⋅
+    //   |         ⋅⋅⋅*⋅
+    //   V i       ⋅⋅⋅⋅*
+    //             ⋅⋅⋅⋅⋅
+    let band_minus = |band| {
+        let (ci, cj) = if band <= ni - 1 {
+            (ni - 1 - band, 0)
+        } else {
+            (0, band - (ni - 1))
+        };
+        let len = cmp::min(band, nj - 1) + 1 - cj;
+        (ci, cj, len)
+    };
+    // To use iterators (ndarray::azip) instead of indices, we take advantage of the fact that the
+    // bands of input and output values are next to each other in the d array and we can interpret
+    // them as a (len, 2) array when we set the strides properly.
+    //
+    // Ex: $idir      = 1     = -1     = 1       = -1
+    //     $jdir      = 1     = -1     = -1      = 1
+    //   +--> j      ⋅⋅⋅I*    ⋅⋅OI⋅    *I⋅⋅⋅    ⋅IO⋅⋅
+    //   |           ⋅⋅IO⋅    ⋅OI⋅⋅    ⋅OI⋅⋅    ⋅⋅IO⋅
+    //   |           ⋅IO⋅⋅    OI⋅⋅*    ⋅⋅OI⋅    ⋅⋅⋅IO
+    //   V i         IO⋅⋅⋅    I⋅⋅⋅⋅    ⋅⋅⋅OI    ⋅⋅⋅⋅I
+    //               ⋅⋅⋅⋅⋅    ⋅⋅⋅⋅⋅    ⋅⋅⋅⋅⋅    *⋅⋅⋅⋅
+    //
+    // The element * is sliced-out from the output array. In the latter two cases, when diagonal
+    // goes through one of the corners, it is possible that the element * might be outside of the
+    // square. We have to handle these individually.
+    //
+    // TODO: Does not work for si = nj < 3 since then stride <= 1.
+    macro_rules! band_sweep {
+        ($band:expr, ($idir:expr, $jdir:expr)) => {
+            let (ci, cj, len) = $band;
+            let stride = if $idir == $jdir { si - 1 } else { si + 1 };
+            let mut view = ArrayViewMut::from_shape(
+                (len, 2).strides((stride, 1)),
+                &mut d[ci * si + cj - if $jdir == 1 { 0 } else { 1 }..][..(len - 1) * stride + 2],
+            ).unwrap();
+            let (input, mut output) = if $jdir == 1 {
+                view.split_at(Axis(1), 1)
+            } else {
+                let r = view.split_at(Axis(1), 1);
+                (r.1, r.0)
+            };
+            let offset = if $idir == 1 { 1 } else { 0 };
+            let di = input.slice(s![1 - offset..len - offset, 0]);
+            let dj = input.slice(s![offset..len - 1  + offset, 0]);
+            let mut out = output.slice_mut(s![offset..len -1 + offset, 0]);
+            azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [$idir as f64, $jdir as f64])});
+        }
     }
-    for band in 1..ni - 1 {
-        let len = cmp::min(ni - band, nj);
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si - 1, 1)),
-            &mut d[(band + 1) * si - 1..][..(len - 1) * (si - 1) + 2],
-        ).unwrap();
-        let (input, mut output) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![..-1, 0]);
-        let dj = input.slice(s![1.., 0]);
-        let mut out = output.slice_mut(s![1.., 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [1., 1.])});
+
+    // 1, 1
+    for band in 1..nj + ni - 2 {
+        band_sweep!(band_plus(band), (1, 1));
     }
     // -1, -1
-    for band in (1..ni - 1).rev() {
-        let len = cmp::min(ni - band, nj);
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si - 1, 1)),
-            &mut d[(band + 1) * si - 2..][..(len - 1) * (si - 1) + 2],
-        ).unwrap();
-        let (mut output, input) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![1.., 0]);
-        let dj = input.slice(s![..-1, 0]);
-        let mut out = output.slice_mut(s![..-1, 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [-1., -1.])});
-    }
-    for band in (1..nj).rev() {
-        let len = cmp::min(band + 1, ni);
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si - 1, 1)),
-            &mut d[band - 1..][..(len - 1) * (si - 1) + 2],
-        ).unwrap();
-        let (mut output, input) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![1.., 0]);
-        let dj = input.slice(s![..-1, 0]);
-        let mut out = output.slice_mut(s![..-1, 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [-1., -1.])});
+    for band in (1..nj + ni - 2).rev() {
+        band_sweep!(band_plus(band), (-1, -1));
     }
     // 1, -1
-    for band in (1..nj - 1).rev() {
-        let len = cmp::min(nj - band, ni);
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si + 1, 1)),
-            &mut d[band - 1..][..(len - 1) * (si + 1) + 2],
-        ).unwrap();
-        let (mut output, input) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![..-1, 0]);
-        let dj = input.slice(s![1.., 0]);
-        let mut out = output.slice_mut(s![1.., 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [1., -1.])});
-    }
-    // special handling of corner in band 0
-    d[si] = inv_norm(d[si], [d[0], d[si + 1]], [1., -1.]);
-    for band in 0..ni - 1 {
-        let len = cmp::min(ni - band, nj) - if band == 0 { 1 } else { 0 };
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si + 1, 1)),
-            &mut d[band * si + if band == 0 { si + 1 } else { 0 } - 1..]
-                [..(len - 1) * (si + 1) + 2],
-        ).unwrap();
-        let (mut output, input) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![..-1, 0]);
-        let dj = input.slice(s![1.., 0]);
-        let mut out = output.slice_mut(s![1.., 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [1., -1.])});
+    for band in (1..nj + ni - 2).rev() {
+        let (mut ci, mut cj, mut len) = band_minus(band);
+        if ci == 0 && cj == 0 {
+            // special handling of corner at (0, 0)
+            d[si] = inv_norm(d[si], [d[0], d[si + 1]], [1., -1.]);
+            ci += 1;
+            cj += 1;
+            len -= 1;
+        }
+        band_sweep!((ci, cj, len), (1, -1));
     }
     // -1, 1
-    // need special handling of corner with coords (ni-1, nj-1) due to overflow
-    for band in (0..ni - 1).rev() {
-        let len = cmp::min(ni - band, nj) - if nj == ni - band {
+    for band in 1..nj + ni - 2 {
+        let (ci, cj, mut len) = band_minus(band);
+        if band == nj - 1 {
+            // special handling of corner at (ni - 1, nj - 1)
             let s = (ni - 2) * si + nj - 1;
             d[s] = inv_norm(d[s], [d[s + si], d[s - 1]], [-1., 1.]);
-            1
-        } else {
-            0
-        };
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si + 1, 1)),
-            &mut d[band * si..][..(len - 1) * (si + 1) + 2],
-        ).unwrap();
-        let (input, mut output) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![1.., 0]);
-        let dj = input.slice(s![..-1, 0]);
-        let mut out = output.slice_mut(s![..-1, 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [-1., 1.])});
-    }
-    for band in 1..nj - 1 {
-        let len = cmp::min(nj - band, ni) - if ni == nj - band {
-            let s = (ni - 2) * si + nj - 1;
-            d[s] = inv_norm(d[s], [d[s + si], d[s - 1]], [-1., 1.]);
-            1
-        } else {
-            0
-        };
-        let mut view = ArrayViewMut::from_shape(
-            (len, 2).strides((si + 1, 1)),
-            &mut d[band..][..(len - 1) * (si + 1) + 2],
-        ).unwrap();
-        let (input, mut output) = view.split_at(Axis(1), 1);
-        let di = input.slice(s![1.., 0]);
-        let dj = input.slice(s![..-1, 0]);
-        let mut out = output.slice_mut(s![..-1, 0]);
-        azip!(mut out, di, dj in { *out = inv_norm(*out, [di, dj], [-1., 1.])});
+            len -= 1;
+        }
+        band_sweep!((ci, cj, len), (-1, 1));
     }
 }
 
@@ -274,7 +277,7 @@ mod tests {
     /// Check propagation of information.
     #[test]
     fn fast_sweep_2d_connectivity() {
-        for &(ni, nj) in &[(4, 5), (5, 4), (5, 5)] {
+        for &(ni, nj) in &[(3, 3), (4, 5), (5, 4), (5, 5)] {
             for ci in 0..ni {
                 for cj in 0..nj {
                     for &s in &[[1., 1.], [1., -1.], [-1., 1.], [-1., -1.]] {

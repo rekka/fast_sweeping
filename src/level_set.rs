@@ -72,9 +72,9 @@ where
         ($s:expr, [$pi:expr, $pj:expr, $pk:expr]) => {
             // $pi specifies at which step the i-th coordinate changes, etc.
             let offset = |step|
-                                        if $pi == step { si } else { 0 } +
-                                        if $pj == step { sj } else { 0 } +
-                                        if $pk == step { sk } else { 0 };
+                                                                if $pi == step { si } else { 0 } +
+                                                                if $pj == step { sj } else { 0 } +
+                                                                if $pk == step { sk } else { 0 };
 
             let s0 = $s;
             let s1 = s0 - offset(0);

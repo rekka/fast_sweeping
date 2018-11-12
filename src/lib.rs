@@ -132,7 +132,7 @@ pub fn anisotropic_signed_distance_2d<N>(
     h: f64,
     norm: N,
 ) where
-    N: DualNorm<[f64; 2], f64>,
+    N: DualNorm<[f64; 2], f64> + Sync,
 {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());
@@ -203,8 +203,8 @@ mod tests {
     use super::*;
     extern crate quickcheck;
     use self::ndarray::prelude::*;
-    use ndarray::s;
     use self::quickcheck::quickcheck;
+    use ndarray::s;
 
     fn check_line(gx: f64, gy: f64, c: f64, dim: (usize, usize), tol: f64, print: bool) -> bool {
         let (nx, ny) = dim;

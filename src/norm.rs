@@ -33,6 +33,7 @@ impl DualNorm<[f64; 2], f64> for EuclideanNorm {
         (p[0] * p[0] + p[1] * p[1]).sqrt()
     }
 
+    #[inline(always)]
     fn inv_dual_norm(&self, d: f64, v: [f64; 2], _: [f64; 2]) -> f64 {
         let a = v[0];
         let b = v[1];
@@ -54,6 +55,7 @@ impl DualNorm<[f64; 3], f64> for EuclideanNorm {
         (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]).sqrt()
     }
 
+    #[inline(always)]
     fn inv_dual_norm(&self, d: f64, v: [f64; 3], _: [f64; 3]) -> f64 {
         let (a, b, c) = {
             use std::mem::swap;
@@ -99,10 +101,12 @@ pub struct L1Norm;
 
 /// Dual norm for the l¹ norm is the l∞ norm.
 impl DualNorm<[f64; 2], f64> for L1Norm {
+    #[inline(always)]
     fn dual_norm(&self, p: [f64; 2]) -> f64 {
         max(p[0].abs(), p[1].abs())
     }
 
+    #[inline(always)]
     fn inv_dual_norm(&self, d: f64, v: [f64; 2], _: [f64; 2]) -> f64 {
         min(d, min(v[0], v[1]) + 1.)
     }
@@ -114,10 +118,12 @@ pub struct MaxNorm;
 
 /// Dual norm for the max (l∞) norm is the l¹ norm.
 impl DualNorm<[f64; 2], f64> for MaxNorm {
+    #[inline(always)]
     fn dual_norm(&self, p: [f64; 2]) -> f64 {
         p[0].abs() + p[1].abs()
     }
 
+    #[inline(always)]
     fn inv_dual_norm(&self, d: f64, v: [f64; 2], _: [f64; 2]) -> f64 {
         min(min(d, v[0] + 1.), min(v[1] + 1., 0.5 * (v[0] + v[1] + 1.)))
     }
@@ -125,10 +131,12 @@ impl DualNorm<[f64; 2], f64> for MaxNorm {
 
 /// Dual norm for the max (l∞) norm is the l¹ norm.
 impl DualNorm<[f64; 3], f64> for MaxNorm {
+    #[inline(always)]
     fn dual_norm(&self, p: [f64; 3]) -> f64 {
         p[0].abs() + p[1].abs() + p[2].abs()
     }
 
+    #[inline(always)]
     fn inv_dual_norm(&self, d: f64, v: [f64; 3], _: [f64; 3]) -> f64 {
         let (a, b, c) = {
             use std::mem::swap;

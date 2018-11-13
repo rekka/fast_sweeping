@@ -23,7 +23,7 @@ use std::cmp;
 /// ‖p‖ ≤ 1, where p_i = (s_i (t - d_i))_+.
 pub fn fast_sweep_2d<F>(d: &mut [f64], dim: (usize, usize), inv_norm: F)
 where
-    F: Fn(f64, [f64; 2], [f64; 2]) -> f64 + Sync + Send,
+    F: Fn(f64, [f64; 2], [f64; 2]) -> f64,
 {
     let (ni, nj) = dim;
     assert_eq!(ni * nj, d.len());

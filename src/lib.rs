@@ -132,7 +132,7 @@ pub fn anisotropic_signed_distance_2d<N>(
     h: f64,
     norm: N,
 ) where
-    N: DualNorm<[f64; 2], f64> + Sync,
+    N: DualNorm<[f64; 2], f64>,
 {
     assert_eq!(dim.0 * dim.1, u.len());
     assert_eq!(dim.0 * dim.1, d.len());

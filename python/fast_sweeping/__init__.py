@@ -6,7 +6,10 @@ import glob
 
 root = os.path.dirname(os.path.dirname(__file__))
 
-libs = glob.glob(root + "/fast_sweeping_capi.*.so")
+if os.name == 'nt':
+    libs = glob.glob(root + "/fast_sweeping_capi.*.pyd")
+else:
+    libs = glob.glob(root + "/fast_sweeping_capi.*.so")
 
 if len(libs) == 0:
     raise(OSError("fast_sweeping_capi.*.so library not found"))
